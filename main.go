@@ -4,10 +4,12 @@ import (
 	"log"
 	"nightmare_navigator/themoviedb"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func main() {
@@ -30,9 +32,10 @@ func main() {
 			continue
 		}
 
-		if strings.HasPrefix(update.Message.Text, "movies") {
+		if strings.Contains(update.Message.Text, "movies") {
+			count := extractCount(update.Message.Text)
 			date := extractDate(update.Message.Text)
-			for _, movie := range *themoviedb.GetFilteredLatestMovies(date) {
+			for _, movie := range *themoviedb.GetFilteredLatestMovies(count, date) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
 				_, err = bot.Send(msg)
 				if err != nil {
@@ -41,6 +44,24 @@ func main() {
 			}
 		}
 	}
+}
+
+func extractCount(text string) int {
+	count := 20
+	numStr := ""
+	for _, char := range text {
+		if unicode.IsDigit(char) {
+			numStr += string(char)
+		} else if numStr != "" {
+			break
+		}
+	}
+
+	if numStr != "" {
+		count, _ = strconv.Atoi(numStr)
+	}
+
+	return count
 }
 
 func extractDate(text string) time.Time {
