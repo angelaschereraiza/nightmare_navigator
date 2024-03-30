@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"nightmare_navigator/omdb"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -37,14 +38,12 @@ type MovieDetailsResponse struct {
 	Runtime int `json:"runtime"`
 }
 
-func GetFilteredLatestMovies(count int, date time.Time) *[]string {
+func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string {
 	baseURL := "https://api.themoviedb.org/3"
 	apiKey := "6882b8441ce200fda300c1e46eeb3e64"
 
-	horrorGenreID := 27
 	excludeGenres := []int{12, 14, 10751, 99, 10402}
 
-	// API request for genre names
 	genreURL := fmt.Sprintf("%s/genre/movie/list?api_key=%s", baseURL, apiKey)
 	genresRes, err := http.Get(genreURL)
 	if err != nil {
@@ -60,24 +59,26 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 		return nil
 	}
 
-	// Create a map for mapping genre IDs to genre names
 	genreMap := make(map[int]string)
 	for _, genre := range genresResponse.Genres {
 		genreMap[genre.ID] = genre.Name
 	}
 
 	var results []string
-	totalPages := (count + 19) / 20 // Calculate number of pages needed
-	for page := 1; page <= totalPages; page++ {
-		// API request for movies for current page
+
+	// Number of movies already collected
+	collected := 0
+
+	for collected < count {
 		params := url.Values{}
 		params.Set("api_key", apiKey)
-		params.Set("with_genres", fmt.Sprintf("%d", horrorGenreID))
+		params.Set("with_genres", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(genres)), ","), "[]"))
 		params.Set("without_genres", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(excludeGenres)), ","), "[]"))
 		params.Set("primary_release_date.lte", date.Format("2006-01-02"))
 		params.Set("with_runtime.gte", "85")
 		params.Set("sort_by", "primary_release_date.desc")
-		params.Set("page", fmt.Sprintf("%d", page))
+		// Calculate page number based on number of movies already collected
+		params.Set("page", fmt.Sprintf("%d", (collected/20)+1))
 
 		searchURL := fmt.Sprintf("%s/discover/movie?%s", baseURL, params.Encode())
 
@@ -95,8 +96,8 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 			continue
 		}
 
-		for i, movie := range movieResponse.Results {
-			if i >= count {
+		for _, movie := range movieResponse.Results {
+			if collected >= count {
 				break
 			}
 
@@ -126,8 +127,32 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 
 			// Title
 			result.WriteString(fmt.Sprintf("Title: %s\n", movie.Title))
-			if movie.Title != movie.OriginalTitle {
+			if movie.Title != movie.OriginalTitle && !containsLatinChars(movie.OriginalTitle) {
 				result.WriteString(fmt.Sprintf("Original Title: %s\n", movie.OriginalTitle))
+			}
+
+			// OMDB
+			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
+				if !isValidIMDb(omdbMovieInformation.IMDb) {
+					continue
+				}
+				if omdbMovieInformation.Rated != "N/A" {
+					result.WriteString(fmt.Sprintf("Rated: %s\n", omdbMovieInformation.Rated))
+				}
+				if omdbMovieInformation.Country != "N/A" {
+					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInformation.Country))
+				}
+				if omdbMovieInformation.IMDb != "N/A" {
+					result.WriteString(fmt.Sprintf("IMDb: %s\n", omdbMovieInformation.IMDb))
+				}
+				if omdbMovieInformation.ImdbVotes != "N/A" {
+					result.WriteString(fmt.Sprintf("Imdb Votes: %s\n", omdbMovieInformation.ImdbVotes))
+				}
+				if omdbMovieInformation.MetaScore != "N/A" {
+					result.WriteString(fmt.Sprintf("MetaScore: %s\n", omdbMovieInformation.MetaScore))
+				}
+			} else {
+				continue
 			}
 
 			// Genres
@@ -157,24 +182,6 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 				result.WriteString(fmt.Sprintf("Runtime: %d minutes\n", movieDetails.Runtime))
 			}
 
-			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
-				if omdbMovieInformation.Rated != "N/A" {
-					result.WriteString(fmt.Sprintf("Rated: %s\n", omdbMovieInformation.Rated))
-				}
-				if omdbMovieInformation.Country != "N/A" {
-					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInformation.Country))
-				}
-				if omdbMovieInformation.IMDb != "N/A" {
-					result.WriteString(fmt.Sprintf("IMDb: %s\n", omdbMovieInformation.IMDb))
-				}
-				if omdbMovieInformation.ImdbVotes != "N/A" {
-					result.WriteString(fmt.Sprintf("Imdb Votes: %s\n", omdbMovieInformation.ImdbVotes))
-				}
-				if omdbMovieInformation.MetaScore != "N/A" {
-					result.WriteString(fmt.Sprintf("MetaScore: %s\n", omdbMovieInformation.MetaScore))
-				}
-			}
-
 			// Description
 			if movie.Overview != "" {
 				result.WriteString(fmt.Sprintf("Description: %s\n", movie.Overview))
@@ -185,6 +192,7 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 			}
 
 			results = append(results, result.String())
+			collected++
 		}
 	}
 
@@ -194,4 +202,15 @@ func GetFilteredLatestMovies(count int, date time.Time) *[]string {
 func containsLatinChars(s string) bool {
 	match, _ := regexp.MatchString("[a-zA-Z]", s)
 	return match
+}
+
+func isValidIMDb(imdb string) bool {
+	if imdb == "N/A" {
+		return false
+	}
+	rating, err := strconv.ParseFloat(imdb, 64)
+	if err != nil {
+		return false
+	}
+	return rating >= 5
 }

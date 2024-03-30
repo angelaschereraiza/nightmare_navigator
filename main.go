@@ -23,7 +23,7 @@ func main() {
 	log.Printf("Bot started as %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = 6000
 
 	updates, err := bot.GetUpdatesChan(u)
 
@@ -32,10 +32,11 @@ func main() {
 			continue
 		}
 
-		if strings.Contains(update.Message.Text, "movies") {
+		if strings.Contains(update.Message.Text, "movie") {
 			count := extractCount(update.Message.Text)
+			genres := extractGenres(update.Message.Text)
 			date := extractDate(update.Message.Text)
-			for _, movie := range *themoviedb.GetFilteredLatestMovies(count, date) {
+			for _, movie := range *themoviedb.GetFilteredLatestMovies(count, genres, date) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
 				_, err = bot.Send(msg)
 				if err != nil {
@@ -62,6 +63,25 @@ func extractCount(text string) int {
 	}
 
 	return count
+}
+
+func extractGenres(text string) []int {
+	genres := []int{27}
+
+	genreRegex := map[int]*regexp.Regexp{
+		878: regexp.MustCompile(`\b(sci[\s-]?fi)\b`),
+		14:  regexp.MustCompile(`\b(fantasy)\b`),
+		53:  regexp.MustCompile(`\b(thriller)\b`),
+		16:  regexp.MustCompile(`\b(animation)\b`),
+	}
+
+	for genre, regex := range genreRegex {
+		if regex.MatchString(strings.ToLower(text)) {
+			genres = append(genres, genre)
+		}
+	}
+
+	return genres
 }
 
 func extractDate(text string) time.Time {
