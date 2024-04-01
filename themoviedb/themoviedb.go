@@ -42,7 +42,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 	baseURL := "https://api.themoviedb.org/3"
 	apiKey := "6882b8441ce200fda300c1e46eeb3e64"
 
-	excludeGenres := []int{12, 14, 10751, 99, 10402}
+	excludeGenres := []int{12, 36, 10751, 99, 10402}
 
 	genreURL := fmt.Sprintf("%s/genre/movie/list?api_key=%s", baseURL, apiKey)
 	genresRes, err := http.Get(genreURL)
