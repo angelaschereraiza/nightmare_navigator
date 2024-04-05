@@ -2,30 +2,51 @@ package main
 
 import (
 	"log"
-	"nightmare_navigator/themoviedb"
-	"regexp"
-	"strconv"
+	"nightmare_navigator/api"
+	"nightmare_navigator/imdb"
+	"nightmare_navigator/utils"
 	"strings"
 	"time"
-	"unicode"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func main() {
+	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
 	if err != nil {
 		log.Panic(err)
 	}
 
 	bot.Debug = true
-
 	log.Printf("Bot started as %s", bot.Self.UserName)
 
+	// Function to calculate the duration until the next 01:00
+	durationUntilNextExecution := func() time.Duration {
+		now := time.Now()
+		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 01, 00, 0, 0, now.Location())
+		if now.After(nextExecution) {
+			nextExecution = nextExecution.Add(24 * time.Hour)
+		}
+		return nextExecution.Sub(now)
+	}
+	imdb.SaveLatestIMDbRatings()
+	// Creates a timer that triggers at 01:00 AM
+	timer := time.NewTimer(durationUntilNextExecution())
+
+	go func() {
+		<-timer.C
+		imdb.SaveLatestIMDbRatings()
+	}()
+
+	// Keeps the bot running by waiting for messages
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 6000
 
 	updates, err := bot.GetUpdatesChan(u)
+	if err != nil {
+		log.Println(err)
+	}
 
 	for update := range updates {
 		if update.Message == nil {
@@ -33,10 +54,10 @@ func main() {
 		}
 
 		if strings.Contains(update.Message.Text, "movie") {
-			count := extractCount(update.Message.Text)
-			genres := extractGenres(update.Message.Text)
-			date := extractDate(update.Message.Text)
-			for _, movie := range *themoviedb.GetFilteredLatestMovies(count, genres, date) {
+			for _, movie := range *api.GetFilteredLatestMovies(
+				utils.ExtractCount(update.Message.Text),
+				utils.ExtractGenres(update.Message.Text),
+				utils.ExtractDate(update.Message.Text)) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
 				_, err = bot.Send(msg)
 				if err != nil {
@@ -45,63 +66,4 @@ func main() {
 			}
 		}
 	}
-}
-
-func extractCount(text string) int {
-	count := 20
-	numStr := ""
-	for _, char := range text {
-		if unicode.IsDigit(char) {
-			numStr += string(char)
-		} else if numStr != "" {
-			break
-		}
-	}
-
-	if numStr != "" {
-		count, _ = strconv.Atoi(numStr)
-	}
-
-	return count
-}
-
-func extractGenres(text string) []int {
-	genres := []int{27}
-
-	genreRegex := map[int]*regexp.Regexp{
-		878: regexp.MustCompile(`\b(sci[\s-]?fi)\b`),
-		14:  regexp.MustCompile(`\b(fantasy)\b`),
-		53:  regexp.MustCompile(`\b(thriller)\b`),
-		16:  regexp.MustCompile(`\b(animation)\b`),
-	}
-
-	for genre, regex := range genreRegex {
-		if regex.MatchString(strings.ToLower(text)) {
-			genres = append(genres, genre)
-		}
-	}
-
-	return genres
-}
-
-func extractDate(text string) time.Time {
-	now := time.Now()
-
-	if text == "" {
-		return now
-	}
-
-	re := regexp.MustCompile(`\d{2}\.\d{2}\.\d{2}`)
-	dateStr := re.FindString(text)
-	if dateStr == "" {
-		return now
-	}
-
-	date, err := time.Parse("02.01.06", dateStr)
-	if err != nil {
-		log.Println(err)
-		return now
-	}
-
-	return date
 }

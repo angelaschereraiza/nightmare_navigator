@@ -1,23 +1,21 @@
-package omdb
+package api
 
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
 
-type OMDBMovie struct {
+type OMDbMovie struct {
 	Title     string `json:"Title"`
 	Rated     string `json:"Rated"`
 	Country   string `json:"Country"`
-	IMDb      string `json:"imdbRating"`
-	MetaScore string `json:"Metascore"`
-	ImdbVotes string `json:"imdbVotes"`
 	Poster    string `json:"Poster"`
 }
 
-func GetMovieByName(name string) *OMDBMovie {
+func GetOMDbInfoByTitle(name string) *OMDbMovie {
 	apiURL := "http://www.omdbapi.com/"
 	apiKey := "d0bd48a2"
 
@@ -28,14 +26,16 @@ func GetMovieByName(name string) *OMDBMovie {
 
 	res, err := http.Get(apiURL + "?" + buildQueryString(params))
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 	defer res.Body.Close()
 
 	// Antwort dekodieren
-	var movie OMDBMovie
+	var movie OMDbMovie
 	err = json.NewDecoder(res.Body).Decode(&movie)
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 

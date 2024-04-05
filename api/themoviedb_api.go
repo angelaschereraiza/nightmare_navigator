@@ -1,11 +1,12 @@
-package themoviedb
+package api
 
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
-	"nightmare_navigator/omdb"
+	"nightmare_navigator/imdb"
 	"regexp"
 	"strconv"
 	"strings"
@@ -47,7 +48,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 	genreURL := fmt.Sprintf("%s/genre/movie/list?api_key=%s", baseURL, apiKey)
 	genresRes, err := http.Get(genreURL)
 	if err != nil {
-		fmt.Println("Error fetching genre names:", err)
+		log.Println("Error fetching genre names:", err)
 		return nil
 	}
 	defer genresRes.Body.Close()
@@ -55,7 +56,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 	var genresResponse GenresResponse
 	err = json.NewDecoder(genresRes.Body).Decode(&genresResponse)
 	if err != nil {
-		fmt.Println("Error decoding JSON response for genres:", err)
+		log.Println("Error decoding JSON response for genres:", err)
 		return nil
 	}
 
@@ -84,7 +85,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 
 		res, err := http.Get(searchURL)
 		if err != nil {
-			fmt.Println("Error making request:", err)
+			log.Println("Error making request:", err)
 			continue
 		}
 		defer res.Body.Close()
@@ -92,7 +93,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 		var movieResponse MovieResponse
 		err = json.NewDecoder(res.Body).Decode(&movieResponse)
 		if err != nil {
-			fmt.Println("Error decoding JSON response:", err)
+			log.Println("Error decoding JSON response:", err)
 			continue
 		}
 
@@ -106,7 +107,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			movieDetailsURL := fmt.Sprintf("%s/movie/%d?api_key=%s", baseURL, movie.ID, apiKey)
 			detailsRes, err := http.Get(movieDetailsURL)
 			if err != nil {
-				fmt.Println("Error fetching movie details:", err)
+				log.Println("Error fetching movie details:", err)
 				continue
 			}
 			defer detailsRes.Body.Close()
@@ -114,46 +115,44 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			var movieDetails MovieDetailsResponse
 			err = json.NewDecoder(detailsRes.Body).Decode(&movieDetails)
 			if err != nil {
-				fmt.Println("Error decoding JSON response for movie details:", err)
+				log.Println("Error decoding JSON response for movie details:", err)
 				continue
 			}
 
 			// Retrieve additional information via the omdb api
-			omdbMovieInformation := omdb.GetMovieByName(movie.Title)
+			omdbMovieInformation := GetOMDbInfoByTitle(movie.Title)
 
-			if !containsLatinChars(movie.Title) {
+			// Retrieve additional information via the imdb list
+			imdbMovieInformation := imdb.GetIMDbInfoByTitle(movie.Title)
+			
+			// If the rating is below 5 or the tile is not written in Latin characters, the movie is skipped
+			if !isValidIMDb(imdbMovieInformation.IMDb) || !containsLatinChars(movie.Title) {
 				continue
 			}
 
 			// Title
 			result.WriteString(fmt.Sprintf("Title: %s\n", movie.Title))
-			if movie.Title != movie.OriginalTitle && !containsLatinChars(movie.OriginalTitle) {
+			if movie.Title != movie.OriginalTitle && containsLatinChars(movie.OriginalTitle) {
 				result.WriteString(fmt.Sprintf("Original Title: %s\n", movie.OriginalTitle))
 			}
 
-			// OMDB
+			// IMDDb
+			if imdbMovieInformation.IMDb != "N/A" {
+				result.WriteString(fmt.Sprintf("IMDb: %s\n", imdbMovieInformation.IMDb))
+			}
+			if imdbMovieInformation.IMDbVotes != "N/A" {
+				result.WriteString(fmt.Sprintf("IMDb Votes: %s\n", imdbMovieInformation.IMDbVotes))
+			}
+
+			// OMDb
 			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
-				if !isValidIMDb(omdbMovieInformation.IMDb) {
-					continue
-				}
 				if omdbMovieInformation.Rated != "N/A" {
 					result.WriteString(fmt.Sprintf("Rated: %s\n", omdbMovieInformation.Rated))
 				}
 				if omdbMovieInformation.Country != "N/A" {
 					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInformation.Country))
 				}
-				if omdbMovieInformation.IMDb != "N/A" {
-					result.WriteString(fmt.Sprintf("IMDb: %s\n", omdbMovieInformation.IMDb))
-				}
-				if omdbMovieInformation.ImdbVotes != "N/A" {
-					result.WriteString(fmt.Sprintf("Imdb Votes: %s\n", omdbMovieInformation.ImdbVotes))
-				}
-				if omdbMovieInformation.MetaScore != "N/A" {
-					result.WriteString(fmt.Sprintf("MetaScore: %s\n", omdbMovieInformation.MetaScore))
-				}
-			} else {
-				continue
-			}
+			} 
 
 			// Genres
 			result.WriteString("Genres: ")
@@ -172,7 +171,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			// Release Date
 			releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 			if err != nil {
-				fmt.Println("Error decoding JSON response:", err)
+				log.Println("Error decoding JSON response:", err)
 				return nil
 			}
 			result.WriteString(fmt.Sprintf("Released: %s\n", releaseDate.Format("02.01.06")))
