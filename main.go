@@ -30,7 +30,7 @@ func main() {
 		}
 		return nextExecution.Sub(now)
 	}
-	imdb.SaveLatestIMDbRatings()
+
 	// Creates a timer that triggers at 01:00 AM
 	timer := time.NewTimer(durationUntilNextExecution())
 

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"nightmare_navigator/imdb"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -25,7 +24,6 @@ type GenresResponse struct {
 type Movie struct {
 	ID            int    `json:"id"`
 	Title         string `json:"title"`
-	OriginalTitle string `json:"original_title"`
 	ReleaseDate   string `json:"release_date"`
 	GenreIDs      []int  `json:"genre_ids"`
 	Overview      string `json:"overview"`
@@ -101,7 +99,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			if collected >= count {
 				break
 			}
-
+			
 			var result strings.Builder
 			// Additional API request to get movie details
 			movieDetailsURL := fmt.Sprintf("%s/movie/%d?api_key=%s", baseURL, movie.ID, apiKey)
@@ -119,30 +117,27 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 				continue
 			}
 
+			// Retrieve additional information via the imdb list
+			imdbMovieInformation := imdb.GetIMDbInfoByTitle(movie.Title)
+			if imdbMovieInformation == nil {
+				continue
+			}
+
 			// Retrieve additional information via the omdb api
 			omdbMovieInformation := GetOMDbInfoByTitle(movie.Title)
 
-			// Retrieve additional information via the imdb list
-			imdbMovieInformation := imdb.GetIMDbInfoByTitle(movie.Title)
-			
-			// If the rating is below 5 or the tile is not written in Latin characters, the movie is skipped
-			if !isValidIMDb(imdbMovieInformation.IMDb) || !containsLatinChars(movie.Title) {
+			// If the tile is not written in Latin characters, the movie is skipped
+			if !containsLatinChars(movie.Title) {
 				continue
 			}
 
 			// Title
 			result.WriteString(fmt.Sprintf("Title: %s\n", movie.Title))
-			if movie.Title != movie.OriginalTitle && containsLatinChars(movie.OriginalTitle) {
-				result.WriteString(fmt.Sprintf("Original Title: %s\n", movie.OriginalTitle))
-			}
 
-			// IMDDb
-			if imdbMovieInformation.IMDb != "N/A" {
-				result.WriteString(fmt.Sprintf("IMDb: %s\n", imdbMovieInformation.IMDb))
-			}
-			if imdbMovieInformation.IMDbVotes != "N/A" {
-				result.WriteString(fmt.Sprintf("IMDb Votes: %s\n", imdbMovieInformation.IMDbVotes))
-			}
+			// IMDb
+			result.WriteString(fmt.Sprintf("IMDb Rating: %s\n", imdbMovieInformation.IMDb))
+			result.WriteString(fmt.Sprintf("IMDb Votes: %s\n", imdbMovieInformation.IMDbVotes))
+			result.WriteString(fmt.Sprintf("IMDb Link: https://www.imdb.com/title/%s\n", imdbMovieInformation.TitleId))
 
 			// OMDb
 			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
@@ -152,7 +147,7 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 				if omdbMovieInformation.Country != "N/A" {
 					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInformation.Country))
 				}
-			} 
+			}
 
 			// Genres
 			result.WriteString("Genres: ")
@@ -201,15 +196,4 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 func containsLatinChars(s string) bool {
 	match, _ := regexp.MatchString("[a-zA-Z]", s)
 	return match
-}
-
-func isValidIMDb(imdb string) bool {
-	if imdb == "N/A" {
-		return false
-	}
-	rating, err := strconv.ParseFloat(imdb, 64)
-	if err != nil {
-		return false
-	}
-	return rating >= 5
 }

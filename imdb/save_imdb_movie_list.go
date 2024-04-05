@@ -2,13 +2,14 @@ package imdb
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,7 @@ const (
 	baseURL         = "https://datasets.imdbws.com/"
 	basicsFilename  = "title.basics.tsv.gz"
 	ratingsFilename = "title.ratings.tsv.gz"
+	jsonFilename    = "imdb_ratings.json"
 	downloadDir     = "imdb"
 )
 
@@ -44,28 +46,28 @@ type MovieInfo struct {
 func SaveLatestIMDbRatings() {
 	// Delete existing files if they exist
 	basicsFilePath := filepath.Join(downloadDir, basicsFilename)
-	// if _, err := os.Stat(basicsFilePath); err == nil {
-	// 	os.Remove(basicsFilePath)
-	// }
+	if _, err := os.Stat(basicsFilePath); err == nil {
+		os.Remove(basicsFilePath)
+	}
 
 	ratingsFilePath := filepath.Join(downloadDir, ratingsFilename)
-	// if _, err := os.Stat(ratingsFilePath); err == nil {
-	// 	os.Remove(ratingsFilePath)
-	// }
+	if _, err := os.Stat(ratingsFilePath); err == nil {
+		os.Remove(ratingsFilePath)
+	}
 
-	// // Download title.basics.tsv.gz
-	// basicsURL := baseURL + basicsFilename
-	// if err := downloadFile(basicsURL, basicsFilePath); err != nil {
-	// 	log.Fatal("Error downloading title.basics.tsv.gz:", err)
-	// }
-	// log.Println("Downloaded", basicsFilename)
+	jsonFilePath := filepath.Join(downloadDir, jsonFilename)
+	if _, err := os.Stat(jsonFilePath); err == nil {
+		os.Remove(jsonFilePath)
+	}
 
-	// // Download title.ratings.tsv.gz
-	// ratingsURL := baseURL + ratingsFilename
-	// if err := downloadFile(ratingsURL, ratingsFilePath); err != nil {
-	// 	log.Fatal("Error downloading title.ratings.tsv.gz:", err)
-	// }
-	// log.Println("Downloaded", ratingsFilename)
+	// // Download files
+	if err := downloadFile(baseURL+basicsFilename, basicsFilePath); err != nil {
+		log.Fatal("Error downloading title.basics.tsv.gz:", err)
+	}
+
+	if err := downloadFile(baseURL+ratingsFilename, ratingsFilePath); err != nil {
+		log.Fatal("Error downloading title.ratings.tsv.gz:", err)
+	}
 
 	// Open title.basics.tsv.gz
 	basicsFile, err := os.Open(basicsFilePath)
@@ -81,19 +83,34 @@ func SaveLatestIMDbRatings() {
 	}
 	defer ratingsFile.Close()
 
-	outputFilePath := "horror_movies.json"
-	outputFile, err := os.Create(outputFilePath)
+	outputFile, err := os.Create(downloadDir + "/" + jsonFilename)
 	if err != nil {
 		log.Fatal("Error creating output file:", err)
 	}
 	defer outputFile.Close()
 
 	encoder := json.NewEncoder(outputFile)
+	encoder.SetIndent("", "\t") // Set indentation for better readability
+
+	var movies []MovieInfo
 
 	ratings := make(map[string]*TitleRatings)
 
+	// Create a gzip.Reader to read the files
+	gzipBasicsFileReader, err := gzip.NewReader(basicsFile)
+	if err != nil {
+		log.Fatal("Error creating gzip reader:", err)
+	}
+	defer gzipBasicsFileReader.Close()
+
+	gzipRatingsFileReader, err := gzip.NewReader(ratingsFile)
+	if err != nil {
+		log.Fatal("Error creating gzip reader:", err)
+	}
+	defer gzipRatingsFileReader.Close()
+
 	// Read title.ratings.tsv.gz
-	ratingsScanner := bufio.NewScanner(ratingsFile)
+	ratingsScanner := bufio.NewScanner(gzipRatingsFileReader)
 	for ratingsScanner.Scan() {
 		line := ratingsScanner.Text()
 		fields := strings.Split(line, "\t")
@@ -106,30 +123,32 @@ func SaveLatestIMDbRatings() {
 		}
 	}
 
-	// Read title.basics.tsv.gz and filter horror movies with average rating >= 5
-	basicsScanner := bufio.NewScanner(basicsFile)
+	// Read title.basics.tsv.gz and filter horror movies with average rating >= 5 and the count of votes >= 1000
+	basicsScanner := bufio.NewScanner(gzipBasicsFileReader)
 	for basicsScanner.Scan() {
 		line := basicsScanner.Text()
 		fields := strings.Split(line, "\t")
-		fmt.Println("aha", len(fields))
-		fmt.Println("aha2", fields)
 		if len(fields) >= 9 && fields[1] == "movie" {
 			for _, genre := range strings.Split(fields[8], ",") {
 				if strings.Contains(genre, "Horror") {
 					if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= "5" {
-						movieInfo := MovieInfo{
-							Tconst:        fields[0],
-							PrimaryTitle:  fields[2],
-							OriginalTitle: fields[3],
-							Genres:        fields[8],
-							AverageRating: rating.AverageRating,
-							NumVotes:      rating.NumVotes,
-						}
-						err := encoder.Encode(movieInfo)
+						numVotes, err := strconv.Atoi(rating.NumVotes)
 						if err != nil {
-							log.Println("Error encoding movie info:", err)
+							log.Printf("Error converting NumVotes to int: %v", err)
+							continue
 						}
-						break
+						if numVotes >= 1000 {
+							movieInfo := MovieInfo{
+								Tconst:        fields[0],
+								PrimaryTitle:  fields[2],
+								OriginalTitle: fields[3],
+								Genres:        fields[8],
+								AverageRating: rating.AverageRating,
+								NumVotes:      rating.NumVotes,
+							}
+							movies = append(movies, movieInfo)
+							break
+						}
 					}
 				}
 			}
@@ -137,6 +156,12 @@ func SaveLatestIMDbRatings() {
 	}
 	if err := basicsScanner.Err(); err != nil {
 		log.Fatal("Error scanning title.basics.tsv.gz:", err)
+	}
+
+	// Encode the movie info array to JSON and write to the output file
+	err = encoder.Encode(movies)
+	if err != nil {
+		log.Fatal("Error encoding movie info:", err)
 	}
 
 	log.Println("Updated imdb rating list")
