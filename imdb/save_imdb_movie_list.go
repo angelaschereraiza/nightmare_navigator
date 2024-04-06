@@ -44,6 +44,12 @@ type MovieInfo struct {
 }
 
 func SaveLatestIMDbRatings() {
+	// Create the directory if it does not exist
+	err := os.MkdirAll(downloadDir, 0755)
+	if err != nil {
+		log.Fatalf("Error creating directory: %v", err)
+	}
+
 	// Delete existing files if they exist
 	basicsFilePath := filepath.Join(downloadDir, basicsFilename)
 	if _, err := os.Stat(basicsFilePath); err == nil {
