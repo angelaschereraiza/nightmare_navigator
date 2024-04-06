@@ -1,13 +1,13 @@
 package imdb
 
 import (
-	"bufio"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 )
 
-type IMDbMovie struct {
+type IMDbMovieInfo struct {
 	Title         string `json:"primaryTitle"`
 	OriginalTitle string `json:"originalTitle"`
 	TitleId       string `json:"tconst"`
@@ -15,31 +15,31 @@ type IMDbMovie struct {
 	IMDbVotes     string `json:"numVotes"`
 }
 
-func GetIMDbInfoByTitle(title string) *IMDbMovie {
-	ratingsFilePath := "imdb/imdb_ratings.json"
-	file, err := os.Open(ratingsFilePath)
+func GetIMDbInfoByTitle(title string) *IMDbMovieInfo {
+	file, err := os.Open(downloadDir + "/" + jsonFilename)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		var movie IMDbMovie
-		err := json.Unmarshal(scanner.Bytes(), &movie)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		
+	content, err := io.ReadAll(io.Reader(file))
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	var movies []IMDbMovieInfo
+	err = json.Unmarshal(content, &movies)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for _, movie := range movies {
 		if movie.Title == title || movie.OriginalTitle == title {
 			return &movie
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Println(err)
 	}
 
 	return nil

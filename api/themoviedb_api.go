@@ -22,11 +22,11 @@ type GenresResponse struct {
 }
 
 type Movie struct {
-	ID            int    `json:"id"`
-	Title         string `json:"title"`
-	ReleaseDate   string `json:"release_date"`
-	GenreIDs      []int  `json:"genre_ids"`
-	Overview      string `json:"overview"`
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	ReleaseDate string `json:"release_date"`
+	GenreIDs    []int  `json:"genre_ids"`
+	Overview    string `json:"overview"`
 }
 
 type MovieResponse struct {
@@ -64,11 +64,15 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 	}
 
 	var results []string
+	addedMovies := make(map[string]bool)
 
 	// Number of movies already collected
 	collected := 0
+	page := 1
 
 	for collected < count {
+		page ++
+
 		params := url.Values{}
 		params.Set("api_key", apiKey)
 		params.Set("with_genres", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(genres)), ","), "[]"))
@@ -76,9 +80,8 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 		params.Set("primary_release_date.lte", date.Format("2006-01-02"))
 		params.Set("with_runtime.gte", "85")
 		params.Set("sort_by", "primary_release_date.desc")
-		// Calculate page number based on number of movies already collected
-		params.Set("page", fmt.Sprintf("%d", (collected/20)+1))
-
+		params.Set("page", fmt.Sprintf("%d", page))
+	
 		searchURL := fmt.Sprintf("%s/discover/movie?%s", baseURL, params.Encode())
 
 		res, err := http.Get(searchURL)
@@ -99,8 +102,13 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			if collected >= count {
 				break
 			}
-			
+
+			if addedMovies[movie.Title] {
+                continue
+            }
+
 			var result strings.Builder
+
 			// Additional API request to get movie details
 			movieDetailsURL := fmt.Sprintf("%s/movie/%d?api_key=%s", baseURL, movie.ID, apiKey)
 			detailsRes, err := http.Get(movieDetailsURL)
@@ -117,14 +125,14 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 				continue
 			}
 
-			// Retrieve additional information via the imdb list
-			imdbMovieInformation := imdb.GetIMDbInfoByTitle(movie.Title)
-			if imdbMovieInformation == nil {
+			// Retrieve additional information via the imdb rating list
+			imdbMovieInfo := imdb.GetIMDbInfoByTitle(movie.Title)
+			if imdbMovieInfo == nil {
 				continue
 			}
 
 			// Retrieve additional information via the omdb api
-			omdbMovieInformation := GetOMDbInfoByTitle(movie.Title)
+			omdbMovieInfo := GetOMDbInfoByTitle(movie.Title)
 
 			// If the tile is not written in Latin characters, the movie is skipped
 			if !containsLatinChars(movie.Title) {
@@ -135,17 +143,17 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 			result.WriteString(fmt.Sprintf("Title: %s\n", movie.Title))
 
 			// IMDb
-			result.WriteString(fmt.Sprintf("IMDb Rating: %s\n", imdbMovieInformation.IMDb))
-			result.WriteString(fmt.Sprintf("IMDb Votes: %s\n", imdbMovieInformation.IMDbVotes))
-			result.WriteString(fmt.Sprintf("IMDb Link: https://www.imdb.com/title/%s\n", imdbMovieInformation.TitleId))
+			result.WriteString(fmt.Sprintf("IMDb Rating: %s\n", imdbMovieInfo.IMDb))
+			result.WriteString(fmt.Sprintf("IMDb Votes: %s\n", imdbMovieInfo.IMDbVotes))
+			result.WriteString(fmt.Sprintf("IMDb Link: https://www.imdb.com/title/%s\n", imdbMovieInfo.TitleId))
 
 			// OMDb
-			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
-				if omdbMovieInformation.Rated != "N/A" {
-					result.WriteString(fmt.Sprintf("Rated: %s\n", omdbMovieInformation.Rated))
+			if omdbMovieInfo != nil && omdbMovieInfo.Title != "" {
+				if omdbMovieInfo.Rated != "N/A" {
+					result.WriteString(fmt.Sprintf("Rated: %s\n", omdbMovieInfo.Rated))
 				}
-				if omdbMovieInformation.Country != "N/A" {
-					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInformation.Country))
+				if omdbMovieInfo.Country != "N/A" {
+					result.WriteString(fmt.Sprintf("Country: %s\n", omdbMovieInfo.Country))
 				}
 			}
 
@@ -181,11 +189,9 @@ func GetFilteredLatestMovies(count int, genres []int, date time.Time) *[]string 
 				result.WriteString(fmt.Sprintf("Description: %s\n", movie.Overview))
 			}
 
-			if omdbMovieInformation != nil && omdbMovieInformation.Title != "" {
-				result.WriteString(fmt.Sprintf("Poster: %s\n", omdbMovieInformation.Poster))
-			}
-
+			addedMovies[movie.Title] = true
 			results = append(results, result.String())
+
 			collected++
 		}
 	}

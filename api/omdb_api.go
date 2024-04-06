@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-type OMDbMovie struct {
-	Title     string `json:"Title"`
-	Rated     string `json:"Rated"`
-	Country   string `json:"Country"`
-	Poster    string `json:"Poster"`
+type OMDbMovieInfo struct {
+	Title   string `json:"Title"`
+	Rated   string `json:"Rated"`
+	Country string `json:"Country"`
+	Poster  string `json:"Poster"`
 }
 
-func GetOMDbInfoByTitle(name string) *OMDbMovie {
+func GetOMDbInfoByTitle(name string) *OMDbMovieInfo {
 	apiURL := "http://www.omdbapi.com/"
 	apiKey := "d0bd48a2"
 
@@ -31,8 +31,7 @@ func GetOMDbInfoByTitle(name string) *OMDbMovie {
 	}
 	defer res.Body.Close()
 
-	// Antwort dekodieren
-	var movie OMDbMovie
+	var movie OMDbMovieInfo
 	err = json.NewDecoder(res.Body).Decode(&movie)
 	if err != nil {
 		log.Println(err)
