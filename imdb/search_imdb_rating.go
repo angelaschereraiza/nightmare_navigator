@@ -2,7 +2,6 @@ package imdb
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"os"
 )
@@ -13,9 +12,10 @@ type IMDbMovieInfo struct {
 	TitleId       string `json:"tconst"`
 	IMDb          string `json:"averageRating"`
 	IMDbVotes     string `json:"numVotes"`
+	Year          string `json:"startYear"`
 }
 
-func GetIMDbInfoByTitle(title string) *IMDbMovieInfo {
+func GetIMDbInfoByTitle(title string, year string) *IMDbMovieInfo {
 	file, err := os.Open(downloadDir + "/" + jsonFilename)
 	if err != nil {
 		log.Println(err)
@@ -23,21 +23,14 @@ func GetIMDbInfoByTitle(title string) *IMDbMovieInfo {
 	}
 	defer file.Close()
 
-	content, err := io.ReadAll(io.Reader(file))
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-
 	var movies []IMDbMovieInfo
-	err = json.Unmarshal(content, &movies)
-	if err != nil {
+	if err := json.NewDecoder(file).Decode(&movies); err != nil {
 		log.Println(err)
 		return nil
 	}
 
 	for _, movie := range movies {
-		if movie.Title == title || movie.OriginalTitle == title {
+		if year == movie.Year && (movie.Title == title || movie.OriginalTitle == title) {
 			return &movie
 		}
 	}

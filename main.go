@@ -21,22 +21,31 @@ func main() {
 	bot.Debug = true
 	log.Printf("Bot started as %s", bot.Self.UserName)
 
-	// Function to calculate the duration until the next 01:00
+	// Function to calculate the duration until the next 03:00
 	durationUntilNextExecution := func() time.Duration {
 		now := time.Now()
-		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 01, 00, 0, 0, now.Location())
+		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 03, 00, 0, 0, now.Location())
 		if now.After(nextExecution) {
 			nextExecution = nextExecution.Add(24 * time.Hour)
 		}
 		return nextExecution.Sub(now)
 	}
 
-	// Creates a timer that triggers at 01:00 AM
+	// Creates a timer that triggers at 03:00 AM
 	timer := time.NewTimer(durationUntilNextExecution())
 
 	go func() {
 		<-timer.C
+		// Updates imdb_rating.json from the public IMDb dataset
 		imdb.SaveLatestIMDbRatings()
+		// Checks if there are new movies this year and sends the movie information to all bot channel users
+		for _, movie := range *api.SearchForNewMovies() {
+			msg := tgbotapi.NewMessage(190303235, movie)
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	}()
 
 	// Keeps the bot running by waiting for messages
@@ -54,10 +63,7 @@ func main() {
 		}
 
 		if strings.Contains(update.Message.Text, "movie") {
-			for _, movie := range *api.GetFilteredLatestMovies(
-				utils.ExtractCount(update.Message.Text),
-				utils.ExtractGenres(update.Message.Text),
-				utils.ExtractDate(update.Message.Text)) {
+			for _, movie := range *api.GetFilteredLatestMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
 				_, err = bot.Send(msg)
 				if err != nil {

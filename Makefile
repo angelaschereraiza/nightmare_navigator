@@ -9,3 +9,7 @@ deploy:
 	cat << 'EOF' | ssh -T aiza.ch 
 	./nightmare_navigator > nightmare_navigator.log 2>&1 &
 	EOF
+
+.PHONY: stop
+stop:
+	ssh aiza.ch	pkill -f nightmare_navigator || true

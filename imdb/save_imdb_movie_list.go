@@ -26,6 +26,7 @@ type TitleBasics struct {
 	PrimaryTitle  string `json:"primaryTitle"`
 	OriginalTitle string `json:"originalTitle"`
 	Genres        string `json:"genres"`
+	StartYear     string `json:"startYear"`
 }
 
 type TitleRatings struct {
@@ -38,6 +39,7 @@ type MovieInfo struct {
 	Tconst        string `json:"tconst"`
 	PrimaryTitle  string `json:"primaryTitle"`
 	OriginalTitle string `json:"originalTitle"`
+	Year          string `json:"startYear"`
 	Genres        string `json:"genres"`
 	AverageRating string `json:"averageRating"`
 	NumVotes      string `json:"numVotes"`
@@ -75,20 +77,20 @@ func SaveLatestIMDbRatings() {
 		log.Fatal("Error downloading title.ratings.tsv.gz:", err)
 	}
 
-	// Open title.basics.tsv.gz
+	// Open files
 	basicsFile, err := os.Open(basicsFilePath)
 	if err != nil {
 		log.Fatal("Error opening title.basics.tsv.gz:", err)
 	}
 	defer basicsFile.Close()
 
-	// Open title.ratings.tsv.gz
 	ratingsFile, err := os.Open(ratingsFilePath)
 	if err != nil {
 		log.Fatal("Error opening title.ratings.tsv.gz:", err)
 	}
 	defer ratingsFile.Close()
 
+	// Creates a json file to save the data
 	outputFile, err := os.Create(downloadDir + "/" + jsonFilename)
 	if err != nil {
 		log.Fatal("Error creating output file:", err)
@@ -96,7 +98,7 @@ func SaveLatestIMDbRatings() {
 	defer outputFile.Close()
 
 	encoder := json.NewEncoder(outputFile)
-	encoder.SetIndent("", "\t") // Set indentation for better readability
+	encoder.SetIndent("", "\t")
 
 	var movies []MovieInfo
 
@@ -148,6 +150,7 @@ func SaveLatestIMDbRatings() {
 								Tconst:        fields[0],
 								PrimaryTitle:  fields[2],
 								OriginalTitle: fields[3],
+								Year:          fields[5],
 								Genres:        fields[8],
 								AverageRating: rating.AverageRating,
 								NumVotes:      rating.NumVotes,
@@ -164,7 +167,7 @@ func SaveLatestIMDbRatings() {
 		log.Fatal("Error scanning title.basics.tsv.gz:", err)
 	}
 
-	// Encode the movie info array to JSON and write to the output file
+
 	err = encoder.Encode(movies)
 	if err != nil {
 		log.Fatal("Error encoding movie info:", err)
