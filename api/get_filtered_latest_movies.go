@@ -157,7 +157,7 @@ func getAdditionalMovieInfo(movie Movie, genreMap map[int]string) string {
 	if imdbMovieInfo == nil {
 		return ""
 	}
-	fmt.Println("aha", imdbMovieInfo)
+
 	// If the title is not written in Latin characters, the movie is skipped
 	if !containsLatinChars(movie.Title) {
 		return ""

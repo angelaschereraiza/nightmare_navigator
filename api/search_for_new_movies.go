@@ -12,10 +12,38 @@ import (
 	"time"
 )
 
+const (
+	downloadDir  = "data"
+	jsonFilename = "already_returned_movies.json"
+)
+
 var alreadyReturnedMovies = make(map[string]bool)
-var alreadyReturnedMoviesFile = filepath.Join(".", "already_returned_movies.json")
+var alreadyReturnedMoviesFile = filepath.Join(downloadDir, jsonFilename)
 
 func SearchForNewMovies() *[]string {
+	// Create the directory if it does not exist
+	err := os.MkdirAll(downloadDir, 0755)
+	if err != nil {
+		log.Fatalf("Error creating directory: %v", err)
+	}
+
+	// Tries to read json file
+	jsonData, err := os.ReadFile(alreadyReturnedMoviesFile)
+	if err != nil {
+		// If there was a problem, maybe the json file does not exist, so a new json file is created
+		jsonData, err := os.Create(downloadDir + "/" + jsonFilename)
+		if err != nil {
+			log.Fatal("Error creating json file:", err)
+		}
+		defer jsonData.Close()
+	} else {
+		// Load alreadyReturnedMovies list from JSON file
+		err = loadAlreadyReturnedMovies(jsonData)
+		if err != nil {
+			log.Println("Error loading already returned movies:", err)
+		}
+	}
+
 	genreMap := getGenres()
 	if genreMap == nil {
 		return nil
@@ -73,7 +101,7 @@ func SearchForNewMovies() *[]string {
 	}
 
 	// Save alreadyReturnedMovies list to JSON file
-	err := saveReturnedMovies()
+	err = saveReturnedMovies()
 	if err != nil {
 		log.Println("Error saving returned movies:", err)
 	}
@@ -101,13 +129,9 @@ func saveReturnedMovies() error {
 }
 
 // Function to load the alreadyReturnedMovies list from a JSON file
-func loadAlreadyReturnedMovies() error {
-	jsonData, err := os.ReadFile(alreadyReturnedMoviesFile)
-	if err != nil {
-		return err
-	}
+func loadAlreadyReturnedMovies(jsonData []byte) error {
 	var movieTitles []string
-	err = json.Unmarshal(jsonData, &movieTitles)
+	err := json.Unmarshal(jsonData, &movieTitles)
 	if err != nil {
 		return err
 	}
@@ -115,22 +139,4 @@ func loadAlreadyReturnedMovies() error {
 		alreadyReturnedMovies[title] = true
 	}
 	return nil
-}
-
-func init() {
-	// Get the absolute path of the directory containing the executable
-	ex, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	exPath := filepath.Dir(ex)
-
-	// Set the filepath for storing the returnedMovies list
-	alreadyReturnedMoviesFile = filepath.Join(exPath, "already_returned_movies.json")
-
-	// Load alreadyReturnedMovies list from JSON file
-	err = loadAlreadyReturnedMovies()
-	if err != nil {
-		log.Println("Error loading already returned movies:", err)
-	}
 }

@@ -18,7 +18,7 @@ const (
 	basicsFilename  = "title.basics.tsv.gz"
 	ratingsFilename = "title.ratings.tsv.gz"
 	jsonFilename    = "imdb_ratings.json"
-	downloadDir     = "imdb"
+	downloadDir     = "data"
 )
 
 type TitleBasics struct {
@@ -138,7 +138,7 @@ func SaveLatestIMDbRatings() {
 		fields := strings.Split(line, "\t")
 		if len(fields) >= 9 && fields[1] == "movie" {
 			for _, genre := range strings.Split(fields[8], ",") {
-				if strings.Contains(genre, "Horror") {
+				if strings.Contains(genre, "Horror") && !strings.Contains(genre, "Romance") && !strings.Contains(genre, "Family") {
 					if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= "5" {
 						numVotes, err := strconv.Atoi(rating.NumVotes)
 						if err != nil {
@@ -166,7 +166,6 @@ func SaveLatestIMDbRatings() {
 	if err := basicsScanner.Err(); err != nil {
 		log.Fatal("Error scanning title.basics.tsv.gz:", err)
 	}
-
 
 	err = encoder.Encode(movies)
 	if err != nil {
