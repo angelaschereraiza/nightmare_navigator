@@ -39,16 +39,12 @@ func RunTelegramBot() {
 		// Updates imdb_rating.json from the public IMDb dataset
 		imdb.SaveLatestIMDbRatings()
 
-		userIds := loadUserIds()
-
 		// Checks if there are new movies this year and sends the movie information to all bot channel users
 		for _, movie := range *api.SearchForNewMovies() {
-			for _, userId := range userIds {
-				msg := tgbotapi.NewMessage(int64(userId), movie)
-				_, err = bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
+			msg := tgbotapi.NewMessageToChannel("@nightmare_navigator", movie)
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 	}()
@@ -75,19 +71,6 @@ func RunTelegramBot() {
 					log.Println(err)
 				}
 			}
-			userIds := loadUserIds()
-			if !containsUserId(userIds, update.Message.Chat.ID) || len(userIds) == 0 {
-				saveUserIds(update.Message.Chat.ID)
-			}
 		}
 	}
-}
-
-func containsUserId(userIds []int64, userId int64) bool {
-	for _, u := range userIds {
-		if u == userId {
-			return true
-		}
-	}
-	return false
 }

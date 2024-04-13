@@ -138,8 +138,11 @@ func SaveLatestIMDbRatings() {
 		fields := strings.Split(line, "\t")
 		if len(fields) >= 9 && fields[1] == "movie" {
 			for _, genre := range strings.Split(fields[8], ",") {
-				if strings.Contains(genre, "Horror") && !strings.Contains(genre, "Romance") && !strings.Contains(genre, "Family") {
-					if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= "5" {
+				if strings.Contains(genre, "Horror") {
+					if rating, ok := ratings[fields[0]]; ok &&
+						rating.AverageRating >= "5" &&
+						!strings.Contains(fields[8], "Romance") &&
+						!strings.Contains(fields[8], "Family") {
 						numVotes, err := strconv.Atoi(rating.NumVotes)
 						if err != nil {
 							log.Printf("Error converting NumVotes to int: %v", err)
