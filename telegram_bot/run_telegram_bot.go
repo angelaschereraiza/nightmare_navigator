@@ -1,6 +1,7 @@
 package telegram_bot
 
 import (
+	"fmt"
 	"log"
 	"nightmare_navigator/api"
 	"nightmare_navigator/imdb"
@@ -12,6 +13,13 @@ import (
 )
 
 func RunTelegramBot() {
+	// Initial imdb data saving
+	imdb.SaveLatestIMDbRatings()
+
+	for _, movie := range *api.SearchForNewMovies() {
+		fmt.Println(movie)
+	}
+
 	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
 	if err != nil {

@@ -144,13 +144,13 @@ func loadAlreadyReturnedMovies(jsonData []byte) error {
 }
 
 func reverseStringArray(arr []string) []string {
-    // Erstelle ein neues String-Array mit der gleichen Länge wie das ursprüngliche Array
-    reversed := make([]string, len(arr))
-    
-    // Iteriere rückwärts durch das ursprüngliche Array und kopiere die Elemente in das neue Array
-    for i := 0; i < len(arr); i++ {
-        reversed[i] = arr[len(arr)-1-i]
-    }
-    
-    return reversed
+	// Erstelle ein neues String-Array mit der gleichen Länge wie das ursprüngliche Array
+	reversed := make([]string, len(arr))
+
+	// Iteriere rückwärts durch das ursprüngliche Array und kopiere die Elemente in das neue Array
+	for i := 0; i < len(arr); i++ {
+		reversed[i] = arr[len(arr)-1-i]
+	}
+
+	return reversed
 }

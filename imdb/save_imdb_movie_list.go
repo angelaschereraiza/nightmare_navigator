@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -39,7 +40,6 @@ type MovieInfo struct {
 	Tconst        string `json:"tconst"`
 	PrimaryTitle  string `json:"primaryTitle"`
 	OriginalTitle string `json:"originalTitle"`
-	Year          string `json:"startYear"`
 	Genres        string `json:"genres"`
 	AverageRating string `json:"averageRating"`
 	NumVotes      string `json:"numVotes"`
@@ -68,7 +68,7 @@ func SaveLatestIMDbRatings() {
 		os.Remove(jsonFilePath)
 	}
 
-	// // Download files
+	// Download files
 	if err := downloadFile(baseURL+basicsFilename, basicsFilePath); err != nil {
 		log.Fatal("Error downloading title.basics.tsv.gz:", err)
 	}
@@ -100,7 +100,7 @@ func SaveLatestIMDbRatings() {
 	encoder := json.NewEncoder(outputFile)
 	encoder.SetIndent("", "\t")
 
-	var movies []MovieInfo
+	moviesByYear := make(map[string][]MovieInfo)
 
 	ratings := make(map[string]*TitleRatings)
 
@@ -153,12 +153,14 @@ func SaveLatestIMDbRatings() {
 								Tconst:        fields[0],
 								PrimaryTitle:  fields[2],
 								OriginalTitle: fields[3],
-								Year:          fields[5],
 								Genres:        fields[8],
 								AverageRating: rating.AverageRating,
 								NumVotes:      rating.NumVotes,
 							}
-							movies = append(movies, movieInfo)
+							startYear := fields[5]
+							yearMovies := moviesByYear[startYear]
+							yearMovies = append(yearMovies, movieInfo)
+							moviesByYear[startYear] = yearMovies
 							break
 						}
 					}
@@ -170,7 +172,25 @@ func SaveLatestIMDbRatings() {
 		log.Fatal("Error scanning title.basics.tsv.gz:", err)
 	}
 
-	err = encoder.Encode(movies)
+	// Convert map to slice for sorting
+	years := make([]string, 0, len(moviesByYear))
+	for year := range moviesByYear {
+		years = append(years, year)
+	}
+	sort.Strings(years)
+
+	// Write JSON output
+	var result []map[string]interface{}
+	for i := len(years) - 1; i >= 0; i-- {
+		year := years[i]
+		yearData := map[string]interface{}{
+			"startYear": year,
+			"data":      moviesByYear[year],
+		}
+		result = append(result, yearData)
+	}
+
+	err = encoder.Encode(result)
 	if err != nil {
 		log.Fatal("Error encoding movie info:", err)
 	}
