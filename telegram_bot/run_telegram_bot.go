@@ -1,12 +1,9 @@
 package telegram_bot
 
 import (
-	"fmt"
 	"log"
 	"nightmare_navigator/api"
 	"nightmare_navigator/imdb"
-	"nightmare_navigator/utils"
-	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -15,10 +12,6 @@ import (
 func RunTelegramBot() {
 	// Initial imdb data saving
 	imdb.SaveLatestIMDbRatings()
-
-	for _, movie := range *api.SearchForNewMovies() {
-		fmt.Println(movie)
-	}
 
 	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
@@ -32,28 +25,39 @@ func RunTelegramBot() {
 	// Function to calculate the duration until the next 03:00
 	durationUntilNextExecution := func() time.Duration {
 		now := time.Now()
-		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 03, 00, 0, 0, now.Location())
+		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, now.Location())
 		if now.After(nextExecution) {
 			nextExecution = nextExecution.Add(24 * time.Hour)
 		}
 		return nextExecution.Sub(now)
 	}
 
-	// Creates a timer that triggers at 03:00 AM
-	timer := time.NewTimer(durationUntilNextExecution())
-
-	go func() {
-		<-timer.C
+	// Function to be executed at 03:00 AM
+	executeAt0300AM := func() {
 		// Updates imdb_rating.json from the public IMDb dataset
 		imdb.SaveLatestIMDbRatings()
 
 		// Checks if there are new movies this year and sends the movie information to all bot channel users
-		for _, movie := range *api.SearchForNewMovies() {
-			msg := tgbotapi.NewMessageToChannel("@nightmare_navigator", movie)
-			_, err = bot.Send(msg)
-			if err != nil {
-				log.Fatal(err)
+		newMovies := api.SearchForNewMovies()
+		if newMovies != nil {
+			for _, movie := range *newMovies {
+				msg := tgbotapi.NewMessageToChannel("@nightmare_navigator", movie)
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+		}
+	}
+
+	// Initial execution
+	timer := time.NewTimer(durationUntilNextExecution())
+
+	go func() {
+		for {
+			<-timer.C
+			executeAt0300AM()
+			timer.Reset(durationUntilNextExecution())
 		}
 	}()
 
@@ -70,15 +74,14 @@ func RunTelegramBot() {
 		if update.Message == nil {
 			continue
 		}
-
-		if strings.Contains(update.Message.Text, "movie") {
-			for _, movie := range *api.GetFilteredLatestMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
-				_, err = bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
+		// if strings.Contains(update.Message.Text, "movie") {
+		// for _, movie := range *api.GetFilteredLatestMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
+		// 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
+		// 	_, err = bot.Send(msg)
+		// 	if err != nil {
+		// 		log.Println(err)
+		// 	}
+		// }
+		// }
 	}
 }

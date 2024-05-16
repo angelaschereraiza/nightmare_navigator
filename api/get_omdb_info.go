@@ -12,7 +12,6 @@ type OMDbMovieInfo struct {
 	Title   string `json:"Title"`
 	Rated   string `json:"Rated"`
 	Country string `json:"Country"`
-	Poster  string `json:"Poster"`
 }
 
 func GetOMDbInfoByTitle(name string) *OMDbMovieInfo {
