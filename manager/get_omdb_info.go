@@ -1,4 +1,4 @@
-package api
+package manager
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type OMDbMovieInfo struct {
 	Country string `json:"Country"`
 }
 
-func GetOMDbInfoByTitle(name string) *OMDbMovieInfo {
+func getOMDbInfoByTitle(name string) *OMDbMovieInfo {
 	apiURL := "http://www.omdbapi.com/"
 	apiKey := "d0bd48a2"
 

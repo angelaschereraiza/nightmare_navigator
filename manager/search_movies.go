@@ -1,9 +1,8 @@
-package api
+package manager
 
 import (
 	"encoding/json"
 	"log"
-	"nightmare_navigator/imdb"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,7 +37,7 @@ func SearchForNewMovies() *[]string {
 	}
 
 	// Gets all movies from imdb ratings json where the year is the current year
-	imdbRatingMovies := imdb.GetIMDbMovieInfosByYear(strconv.Itoa(time.Now().Year()))
+	imdbRatingMovies := getIMDbMovieInfosByYear(strconv.Itoa(time.Now().Year()))
 
 	// Check if imdbRatinsMovie is contained in alreadyReturnedMovies and removes it from the list if true
 	newMovies := filterAlreadyReturnedMovies(imdbRatingMovies)
@@ -55,14 +54,14 @@ func SearchForNewMovies() *[]string {
 	}
 
 	// Gets additional movie information
-	newMoviesWithAllInfo := GetAdditionalMovieInfo(newMovies)
+	newMoviesWithAllInfo := getAdditionalMovieInfo(newMovies)
 
 	return newMoviesWithAllInfo
 }
 
 // Function to filter out movies that are already returned
-func filterAlreadyReturnedMovies(imdbRatingsMovies []imdb.IMDbMovieInfo) []imdb.IMDbMovieInfo {
-	var filteredMovies []imdb.IMDbMovieInfo
+func filterAlreadyReturnedMovies(imdbRatingsMovies []IMDbMovieInfo) []IMDbMovieInfo {
+	var filteredMovies []IMDbMovieInfo
 
 	for _, movie := range imdbRatingsMovies {
 		if !alreadyReturnedMovies[movie.Title] {

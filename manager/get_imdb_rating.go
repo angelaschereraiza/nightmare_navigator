@@ -1,17 +1,19 @@
-package imdb
+package manager
 
 import (
 	"encoding/json"
 	"log"
 	"os"
+	"time"
 )
 
 type IMDbMovieInfo struct {
-	Title     string
-	IMDb      string
-	IMDbVotes string
-	Year      string
-	TitleId   string
+	Title       string
+	IMDb        string
+	IMDbVotes   string
+	Year        string
+	TitleId     string
+	ReleaseDate string
 }
 
 type IMDbJsonData struct {
@@ -22,6 +24,7 @@ type IMDbJsonData struct {
 		Genres        string `json:"genres"`
 		AverageRating string `json:"averageRating"`
 		NumVotes      string `json:"numVotes"`
+		ReleaseDate   string `json:"releaseDate"`
 	} `json:"data"`
 	StartYear string `json:"startYear"`
 }
@@ -44,11 +47,12 @@ func loadIMDbData() *[]IMDbMovieInfo {
 	for _, yearDatas := range movieDatas {
 		for _, movie := range yearDatas.Data {
 			imdbMovieInfo := IMDbMovieInfo{
-				Title:     movie.PrimaryTitle,
-				IMDb:      movie.AverageRating,
-				IMDbVotes: movie.NumVotes,
-				Year:      yearDatas.StartYear,
-				TitleId:   movie.Tconst,
+				Title:       movie.PrimaryTitle,
+				IMDb:        movie.AverageRating,
+				IMDbVotes:   movie.NumVotes,
+				Year:        yearDatas.StartYear,
+				TitleId:     movie.Tconst,
+				ReleaseDate: movie.ReleaseDate,
 			}
 
 			imdbMovieInfos = append(imdbMovieInfos, imdbMovieInfo)
@@ -58,7 +62,7 @@ func loadIMDbData() *[]IMDbMovieInfo {
 	return &imdbMovieInfos
 }
 
-func GetIMDbMovieInfosByYear(year string) []IMDbMovieInfo {
+func getIMDbMovieInfosByYear(year string) []IMDbMovieInfo {
 	imdbMovieInfos := loadIMDbData()
 
 	var moviesByYear []IMDbMovieInfo
@@ -66,6 +70,33 @@ func GetIMDbMovieInfosByYear(year string) []IMDbMovieInfo {
 	for _, movie := range *imdbMovieInfos {
 		if movie.Year == year {
 			moviesByYear = append(moviesByYear, movie)
+		}
+	}
+
+	return moviesByYear
+}
+
+func getIMDbMovieInfosByDateAndGenre(count *int, genres *[]string, date *time.Time) []IMDbMovieInfo {
+	imdbMovieInfos := loadIMDbData()
+
+	var moviesByYear []IMDbMovieInfo
+	collectedCount := 0
+
+	if count == nil {
+		*count = 10
+	}
+
+	for _, movie := range *imdbMovieInfos {
+		for collectedCount < *count {
+			releaseDate, err := time.Parse("02.01.06", movie.ReleaseDate)
+			if err != nil {
+				log.Println(err)
+			}
+
+			if date.After(releaseDate) {
+				moviesByYear = append(moviesByYear, movie)
+				collectedCount++
+			}
 		}
 	}
 

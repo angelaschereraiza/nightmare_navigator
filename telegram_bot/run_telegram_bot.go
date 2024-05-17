@@ -2,8 +2,7 @@ package telegram_bot
 
 import (
 	"log"
-	"nightmare_navigator/api"
-	"nightmare_navigator/imdb"
+	"nightmare_navigator/manager"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -11,7 +10,7 @@ import (
 
 func RunTelegramBot() {
 	// Initial imdb data saving
-	imdb.SaveLatestIMDbRatings()
+	manager.SaveLatestIMDbRatings()
 
 	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
@@ -35,10 +34,10 @@ func RunTelegramBot() {
 	// Function to be executed at 03:00 AM
 	executeAt0300AM := func() {
 		// Updates imdb_rating.json from the public IMDb dataset
-		imdb.SaveLatestIMDbRatings()
+		manager.SaveLatestIMDbRatings()
 
 		// Checks if there are new movies this year and sends the movie information to all bot channel users
-		newMovies := api.SearchForNewMovies()
+		newMovies := manager.SearchForNewMovies()
 		if newMovies != nil {
 			for _, movie := range *newMovies {
 				msg := tgbotapi.NewMessageToChannel("@nightmare_navigator", movie)
@@ -75,7 +74,7 @@ func RunTelegramBot() {
 			continue
 		}
 		// if strings.Contains(update.Message.Text, "movie") {
-		// for _, movie := range *api.GetFilteredLatestMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
+		// for _, movie := range *api.GetFilteredMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
 		// 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
 		// 	_, err = bot.Send(msg)
 		// 	if err != nil {

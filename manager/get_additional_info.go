@@ -1,32 +1,19 @@
-package api
+package manager
 
 import (
 	"fmt"
-	"log"
-	"nightmare_navigator/imdb"
 	"regexp"
 	"strings"
-	"time"
 )
 
-func GetAdditionalMovieInfo(imdbMovieInfos []imdb.IMDbMovieInfo) *[]string {
+func getAdditionalMovieInfo(imdbMovieInfos []IMDbMovieInfo) *[]string {
 	var results []string
 
 	for _, imdbMovieInfo := range imdbMovieInfos {
 		// Gets additional movie infos
-		omdbMovieInfo := GetOMDbInfoByTitle(imdbMovieInfo.Title)
-		theMovieDbInfo := GetTheMovieDbInfoByTitle(imdbMovieInfo.Title)
-		genreMap := GetGenres()
-
-		// Checks if release date is newer than current and skip if true
-		releaseDate, err := time.Parse("02.01.06", theMovieDbInfo.ReleaseDate)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if releaseDate.After(time.Now()) {
-			continue
-		}
+		omdbMovieInfo := getOMDbInfoByTitle(imdbMovieInfo.Title)
+		theMovieDbInfo := getTheMovieDbInfoByTitle(imdbMovieInfo.Title)
+		genreMap := getGenres()
 
 		// If the title is not written in Latin characters, the movie is skipped
 		if !containsLatinChars(imdbMovieInfo.Title) {
@@ -39,7 +26,7 @@ func GetAdditionalMovieInfo(imdbMovieInfos []imdb.IMDbMovieInfo) *[]string {
 	return &results
 }
 
-func buildMovieInfoString(imdbMovieInfo imdb.IMDbMovieInfo, omdbMovieInfo *OMDbMovieInfo, theMovieDbInfo *TheMovieDbInfo, genreMap map[int]string) string {
+func buildMovieInfoString(imdbMovieInfo IMDbMovieInfo, omdbMovieInfo *OMDbMovieInfo, theMovieDbInfo *TheMovieDbInfo, genreMap map[int]string) string {
 	var result strings.Builder
 
 	// Title

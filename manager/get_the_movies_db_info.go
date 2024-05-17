@@ -1,4 +1,4 @@
-package api
+package manager
 
 import (
 	"encoding/json"
@@ -40,7 +40,7 @@ type MovieDetailsResponse struct {
 	Runtime int `json:"runtime"`
 }
 
-func GetTheMovieDbInfoByTitle(title string) *TheMovieDbInfo {
+func getTheMovieDbInfoByTitle(title string) *TheMovieDbInfo {
 	params := url.Values{}
 	params.Set("api_key", apiKey)
 	params.Set("query", title)
@@ -61,35 +61,41 @@ func GetTheMovieDbInfoByTitle(title string) *TheMovieDbInfo {
 		return nil
 	}
 
-	theMovieDbInfo := theMovieDbInfos.Results[0]
+	if len(theMovieDbInfos.Results) > 0 {
+		theMovieDbInfo := theMovieDbInfos.Results[0]
 
-	releaseDate, err := time.Parse("2006-01-02", theMovieDbInfo.ReleaseDate)
-	if err != nil {
-		log.Println("Error parsing release date:", err)
+		if theMovieDbInfo.ReleaseDate != "" {
+			releaseDate, err := time.Parse("2006-01-02", theMovieDbInfo.ReleaseDate)
+			if err != nil {
+				log.Println("Error parsing release date:", err)
+			}
+
+			theMovieDbInfo.ReleaseDate = releaseDate.Format("02.01.06")
+		}
+
+		// Additional API request to get movie runtime
+		movieDetailsURL := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d?api_key=%s", theMovieDbInfo.ID, apiKey)
+		detailsRes, err := http.Get(movieDetailsURL)
+		if err != nil {
+			log.Println("Error fetching movie details:", err)
+		}
+		defer detailsRes.Body.Close()
+
+		var movieDetails MovieDetailsResponse
+		err = json.NewDecoder(detailsRes.Body).Decode(&movieDetails)
+		if err != nil {
+			log.Println("Error decoding JSON response for movie details:", err)
+		}
+
+		theMovieDbInfo.Runtime = movieDetails.Runtime
+
+		return &theMovieDbInfo
 	}
 
-	theMovieDbInfo.ReleaseDate = releaseDate.Format("02.01.06")
-
-	// Additional API request to get movie runtime
-	movieDetailsURL := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d?api_key=%s", theMovieDbInfo.ID, apiKey)
-	detailsRes, err := http.Get(movieDetailsURL)
-	if err != nil {
-		log.Println("Error fetching movie details:", err)
-	}
-	defer detailsRes.Body.Close()
-
-	var movieDetails MovieDetailsResponse
-	err = json.NewDecoder(detailsRes.Body).Decode(&movieDetails)
-	if err != nil {
-		log.Println("Error decoding JSON response for movie details:", err)
-	}
-
-	theMovieDbInfo.Runtime = movieDetails.Runtime
-
-	return &theMovieDbInfo
+	return nil
 }
 
-func GetGenres() *map[int]string {
+func getGenres() *map[int]string {
 	genreURL := fmt.Sprintf("%s/genre/movie/list?api_key=%s", baseURL, apiKey)
 	genresRes, err := http.Get(genreURL)
 	if err != nil {

@@ -1,4 +1,4 @@
-package imdb
+package manager
 
 import (
 	"bufio"
@@ -12,10 +12,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
-	baseURL         = "https://datasets.imdbws.com/"
+	imdbBaseURL     = "https://datasets.imdbws.com/"
 	basicsFilename  = "title.basics.tsv.gz"
 	ratingsFilename = "title.ratings.tsv.gz"
 	jsonFilename    = "imdb_ratings.json"
@@ -43,6 +44,7 @@ type MovieInfo struct {
 	Genres        string `json:"genres"`
 	AverageRating string `json:"averageRating"`
 	NumVotes      string `json:"numVotes"`
+	ReleaseDate   string `json:"releaseDate"`
 }
 
 func SaveLatestIMDbRatings() {
@@ -69,11 +71,11 @@ func SaveLatestIMDbRatings() {
 	}
 
 	// Download files
-	if err := downloadFile(baseURL+basicsFilename, basicsFilePath); err != nil {
+	if err := downloadFile(imdbBaseURL+basicsFilename, basicsFilePath); err != nil {
 		log.Fatal("Error downloading title.basics.tsv.gz:", err)
 	}
 
-	if err := downloadFile(baseURL+ratingsFilename, ratingsFilePath); err != nil {
+	if err := downloadFile(imdbBaseURL+ratingsFilename, ratingsFilePath); err != nil {
 		log.Fatal("Error downloading title.ratings.tsv.gz:", err)
 	}
 
@@ -157,6 +159,22 @@ func SaveLatestIMDbRatings() {
 								AverageRating: rating.AverageRating,
 								NumVotes:      rating.NumVotes,
 							}
+
+							theMovieDbInfo := getTheMovieDbInfoByTitle(fields[3])
+							if theMovieDbInfo != nil {
+								// Checks if release date is newer than current and skip if true
+								releaseDate, err := time.Parse("02.01.06", theMovieDbInfo.ReleaseDate)
+								if err != nil {
+									log.Println(err)
+									continue
+								}
+								if releaseDate.After(time.Now()) {
+									continue
+								}
+
+								movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
+							}
+
 							startYear := fields[5]
 							yearMovies := moviesByYear[startYear]
 							yearMovies = append(yearMovies, movieInfo)
