@@ -9,44 +9,56 @@ import (
 	"unicode"
 )
 
+// Default values
+const defaultCount = 20
+var defaultGenres = []string{"Horror"}
+
+// Precompiled regular expressions for genre extraction
+var genreRegex = map[string]*regexp.Regexp{
+	"Sci-Fi":    regexp.MustCompile(`\b(sci[\s-]?fi)\b`),
+	"Fantasy":   regexp.MustCompile(`\b(fantasy)\b`),
+	"Thriller":  regexp.MustCompile(`\b(thriller)\b`),
+	"Animation": regexp.MustCompile(`\b(animation)\b`),
+}
+
+// ExtractCount extracts the first integer found in the text. Defaults to 20 if no integer is found.
 func ExtractCount(text string) int {
-	count := 20
-	numStr := ""
 	for _, char := range text {
 		if unicode.IsDigit(char) {
-			numStr += string(char)
-		} else if numStr != "" {
-			break
+			numStr := string(char)
+			return parseFirstInt(numStr, defaultCount)
 		}
 	}
+	return defaultCount
+}
 
-	if numStr != "" {
-		count, _ = strconv.Atoi(numStr)
+// parseFirstInt converts the first found numeric string to an integer. Returns defaultCount on failure.
+func parseFirstInt(numStr string, defaultCount int) int {
+	count, err := strconv.Atoi(numStr)
+	if err != nil {
+		log.Printf("Error converting %s to int: %v", numStr, err)
+		return defaultCount
 	}
-
 	return count
 }
 
-func ExtractGenres(text string) []int {
-	genres := []int{27}
+// ExtractGenres extracts predefined genres from the text. Defaults to ["Horror"].
+func ExtractGenres(text string) []string {
+	genres := make([]string, len(defaultGenres))
+	copy(genres, defaultGenres)
 
-	genreRegex := map[int]*regexp.Regexp{
-		878: regexp.MustCompile(`\b(sci[\s-]?fi)\b`),
-		14:  regexp.MustCompile(`\b(fantasy)\b`),
-		53:  regexp.MustCompile(`\b(thriller)\b`),
-		16:  regexp.MustCompile(`\b(animation)\b`),
-	}
-
+	lowerText := strings.ToLower(text)
 	for genre, regex := range genreRegex {
-		if regex.MatchString(strings.ToLower(text)) {
+		if regex.MatchString(lowerText) {
 			genres = append(genres, genre)
 		}
 	}
-
 	return genres
 }
 
+// ExtractDate extracts the first date in the format "DD.MM.YY" from the text. Defaults to the current date.
 func ExtractDate(text string) time.Time {
+	const dateFormat = "02.01.06"
 	now := time.Now()
 
 	if text == "" {
@@ -59,9 +71,9 @@ func ExtractDate(text string) time.Time {
 		return now
 	}
 
-	date, err := time.Parse("02.01.06", dateStr)
+	date, err := time.Parse(dateFormat, dateStr)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error parsing date %s: %v", dateStr, err)
 		return now
 	}
 

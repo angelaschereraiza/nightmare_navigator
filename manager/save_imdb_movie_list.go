@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,195 +13,235 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
 	imdbBaseURL     = "https://datasets.imdbws.com/"
 	basicsFilename  = "title.basics.tsv.gz"
 	ratingsFilename = "title.ratings.tsv.gz"
-	jsonFilename    = "imdb_ratings.json"
+	jsonFilename    = "imdb_movies.json"
 	downloadDir     = "data"
+	horrorGenre     = "Horror"
+	minRating       = 5.0
+	minVotes        = 1000
 )
 
 type TitleBasics struct {
-	Tconst        string `json:"tconst"`
-	PrimaryTitle  string `json:"primaryTitle"`
-	OriginalTitle string `json:"originalTitle"`
-	Genres        string `json:"genres"`
-	StartYear     string `json:"startYear"`
+	Tconst        string
+	PrimaryTitle  string
+	OriginalTitle string
+	Genres        string
+	StartYear     string
 }
 
 type TitleRatings struct {
-	Tconst        string `json:"tconst"`
-	AverageRating string `json:"averageRating"`
-	NumVotes      string `json:"numVotes"`
+	Tconst        string
+	AverageRating float64
+	NumVotes      int
 }
 
-type MovieInfo struct {
-	Tconst        string `json:"tconst"`
-	PrimaryTitle  string `json:"primaryTitle"`
-	OriginalTitle string `json:"originalTitle"`
-	Genres        string `json:"genres"`
+type IMDbMovieInfo struct {
 	AverageRating string `json:"averageRating"`
+	Country       string `json:"country"`
+	Genres        string `json:"genres"`
 	NumVotes      string `json:"numVotes"`
+	OriginalTitle string `json:"originalTitle"`
+	PrimaryTitle  string `json:"primaryTitle"`
+	Rated         string `json:"rated"`
 	ReleaseDate   string `json:"releaseDate"`
+	Runtime       int    `json:"runtime"`
+	Description   string `json:"description"`
+	Tconst        string `json:"tconst"`
 }
 
 func SaveLatestIMDbRatings() {
-	// Create the directory if it does not exist
-	err := os.MkdirAll(downloadDir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(downloadDir, 0755); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
 	}
 
-	// Delete existing files if they exist
-	basicsFilePath := filepath.Join(downloadDir, basicsFilename)
-	if _, err := os.Stat(basicsFilePath); err == nil {
-		os.Remove(basicsFilePath)
+	cleanupFiles([]string{basicsFilename, ratingsFilename, jsonFilename})
+
+	if err := downloadAndExtractFiles(); err != nil {
+		log.Fatalf("Error downloading files: %v", err)
 	}
 
-	ratingsFilePath := filepath.Join(downloadDir, ratingsFilename)
-	if _, err := os.Stat(ratingsFilePath); err == nil {
-		os.Remove(ratingsFilePath)
-	}
-
-	jsonFilePath := filepath.Join(downloadDir, jsonFilename)
-	if _, err := os.Stat(jsonFilePath); err == nil {
-		os.Remove(jsonFilePath)
-	}
-
-	// Download files
-	if err := downloadFile(imdbBaseURL+basicsFilename, basicsFilePath); err != nil {
-		log.Fatal("Error downloading title.basics.tsv.gz:", err)
-	}
-
-	if err := downloadFile(imdbBaseURL+ratingsFilename, ratingsFilePath); err != nil {
-		log.Fatal("Error downloading title.ratings.tsv.gz:", err)
-	}
-
-	// Open files
-	basicsFile, err := os.Open(basicsFilePath)
+	basicsFile, err := os.Open(filepath.Join(downloadDir, basicsFilename))
 	if err != nil {
-		log.Fatal("Error opening title.basics.tsv.gz:", err)
+		log.Fatalf("Error opening title.basics.tsv.gz: %v", err)
 	}
 	defer basicsFile.Close()
 
-	ratingsFile, err := os.Open(ratingsFilePath)
+	ratingsFile, err := os.Open(filepath.Join(downloadDir, ratingsFilename))
 	if err != nil {
-		log.Fatal("Error opening title.ratings.tsv.gz:", err)
+		log.Fatalf("Error opening title.ratings.tsv.gz: %v", err)
 	}
 	defer ratingsFile.Close()
 
-	// Creates a json file to save the data
-	outputFile, err := os.Create(downloadDir + "/" + jsonFilename)
+	outputFile, err := os.Create(filepath.Join(downloadDir, jsonFilename))
 	if err != nil {
-		log.Fatal("Error creating output file:", err)
+		log.Fatalf("Error creating output file: %v", err)
 	}
 	defer outputFile.Close()
 
+	imdbMovies := loadIMDbMovies(basicsFile, ratingsFile)
+
+	writeJSON(outputFile, imdbMovies)
+
+	log.Println("Updated IMDb movie list")
+}
+
+func cleanupFiles(files []string) {
+	for _, file := range files {
+		path := filepath.Join(downloadDir, file)
+		if _, err := os.Stat(path); err == nil {
+			os.Remove(path)
+		}
+	}
+}
+
+func downloadAndExtractFiles() error {
+	files := []string{basicsFilename, ratingsFilename}
+	for _, file := range files {
+		if err := downloadFile(imdbBaseURL+file, filepath.Join(downloadDir, file)); err != nil {
+			return fmt.Errorf("error downloading %s: %v", file, err)
+		}
+	}
+	return nil
+}
+
+func loadIMDbMovies(basicsFile, ratingsFile *os.File) map[string][]IMDbMovieInfo {
+	ratings := loadRatings(ratingsFile)
+	return loadBasicsAndFilter(basicsFile, ratings)
+}
+
+func loadRatings(file *os.File) map[string]*TitleRatings {
+	ratings := make(map[string]*TitleRatings)
+	reader, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatalf("Error creating gzip reader for ratings file: %v", err)
+	}
+	defer reader.Close()
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		fields := strings.Split(scanner.Text(), "\t")
+		if len(fields) >= 3 {
+			averageRating, _ := strconv.ParseFloat(fields[1], 64)
+			numVotes, _ := strconv.Atoi(fields[2])
+			ratings[fields[0]] = &TitleRatings{
+				Tconst:        fields[0],
+				AverageRating: averageRating,
+				NumVotes:      numVotes,
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading ratings file: %v", err)
+	}
+
+	return ratings
+}
+
+func loadBasicsAndFilter(file *os.File, ratings map[string]*TitleRatings) map[string][]IMDbMovieInfo {
+	moviesByYear := make(map[string][]IMDbMovieInfo)
+	reader, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatalf("Error creating gzip reader for basics file: %v", err)
+	}
+	defer reader.Close()
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		fields := strings.Split(scanner.Text(), "\t")
+		if len(fields) >= 9 && fields[1] == "movie" {
+			processMovie(fields, ratings, moviesByYear)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading basics file: %v", err)
+	}
+
+	return moviesByYear
+}
+
+func processMovie(fields []string, ratings map[string]*TitleRatings, moviesByYear map[string][]IMDbMovieInfo) {
+	if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= minRating && rating.NumVotes >= minVotes {
+		genres := strings.Split(fields[8], ",")
+		if containsGenre(genres, horrorGenre) && !containsGenre(genres, "Romance") && !containsGenre(genres, "Family") {
+			movieInfo := createMovieInfo(fields, rating)
+			if movieInfo == nil {
+				return
+			}
+
+			movieInfo.addAdditionalInfo(fields[3])
+			startYear := fields[5]
+			moviesByYear[startYear] = append(moviesByYear[startYear], *movieInfo)
+		}
+	}
+}
+
+func createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
+	genres := strings.Split(fields[8], ",")
+	var genresFormatted strings.Builder
+
+	// If there are genres, format them with commas and "and" for the last genre
+	if len(genres) > 0 {
+		for i, genre := range genres {
+			if i > 0 && i < len(genres)-1 {
+				genresFormatted.WriteString(", ")
+			}
+
+			if i == len(genres)-1 && i != 0 {
+				genresFormatted.WriteString("and ")
+			}
+			genresFormatted.WriteString(genre)
+		}
+	}
+
+	return &IMDbMovieInfo{
+		Tconst:        fields[0],
+		PrimaryTitle:  fields[2],
+		OriginalTitle: fields[3],
+		Genres:        genresFormatted.String(),
+		AverageRating: fmt.Sprintf("%.1f", rating.AverageRating),
+		NumVotes:      strconv.Itoa(rating.NumVotes),
+	}
+}
+
+func (movieInfo *IMDbMovieInfo) addAdditionalInfo(title string) {
+	theMovieDbInfo := getTheMovieDbInfoByTitle(title)
+	if theMovieDbInfo != nil {
+		movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
+		movieInfo.Description = theMovieDbInfo.Description
+		movieInfo.Runtime = theMovieDbInfo.Runtime
+	}
+
+	// omdbMovieDbInfo := getOMDbInfoByTitle(title)
+	// if omdbMovieDbInfo != nil {
+	// 	movieInfo.Rated = omdbMovieDbInfo.Rated
+	// 	movieInfo.Country = omdbMovieDbInfo.Country
+	// }
+}
+
+func containsGenre(genres []string, genre string) bool {
+	for _, g := range genres {
+		if g == genre {
+			return true
+		}
+	}
+	return false
+}
+
+func writeJSON(outputFile *os.File, moviesByYear map[string][]IMDbMovieInfo) {
 	encoder := json.NewEncoder(outputFile)
 	encoder.SetIndent("", "\t")
 
-	moviesByYear := make(map[string][]MovieInfo)
+	years := sortedYears(moviesByYear)
 
-	ratings := make(map[string]*TitleRatings)
-
-	// Create a gzip.Reader to read the files
-	gzipBasicsFileReader, err := gzip.NewReader(basicsFile)
-	if err != nil {
-		log.Fatal("Error creating gzip reader:", err)
-	}
-	defer gzipBasicsFileReader.Close()
-
-	gzipRatingsFileReader, err := gzip.NewReader(ratingsFile)
-	if err != nil {
-		log.Fatal("Error creating gzip reader:", err)
-	}
-	defer gzipRatingsFileReader.Close()
-
-	// Read title.ratings.tsv.gz
-	ratingsScanner := bufio.NewScanner(gzipRatingsFileReader)
-	for ratingsScanner.Scan() {
-		line := ratingsScanner.Text()
-		fields := strings.Split(line, "\t")
-		if len(fields) >= 3 {
-			ratings[fields[0]] = &TitleRatings{
-				Tconst:        fields[0],
-				AverageRating: fields[1],
-				NumVotes:      fields[2],
-			}
-		}
-	}
-
-	// Read title.basics.tsv.gz and filter horror movies with average rating >= 5 and the count of votes >= 1000
-	basicsScanner := bufio.NewScanner(gzipBasicsFileReader)
-	for basicsScanner.Scan() {
-		line := basicsScanner.Text()
-		fields := strings.Split(line, "\t")
-		if len(fields) >= 9 && fields[1] == "movie" {
-			for _, genre := range strings.Split(fields[8], ",") {
-				if strings.Contains(genre, "Horror") {
-					if rating, ok := ratings[fields[0]]; ok &&
-						rating.AverageRating >= "5" &&
-						!strings.Contains(fields[8], "Romance") &&
-						!strings.Contains(fields[8], "Family") {
-						numVotes, err := strconv.Atoi(rating.NumVotes)
-						if err != nil {
-							log.Printf("Error converting NumVotes to int: %v", err)
-							continue
-						}
-						if numVotes >= 1000 {
-							movieInfo := MovieInfo{
-								Tconst:        fields[0],
-								PrimaryTitle:  fields[2],
-								OriginalTitle: fields[3],
-								Genres:        fields[8],
-								AverageRating: rating.AverageRating,
-								NumVotes:      rating.NumVotes,
-							}
-
-							theMovieDbInfo := getTheMovieDbInfoByTitle(fields[3])
-							if theMovieDbInfo != nil {
-								// Checks if release date is newer than current and skip if true
-								releaseDate, err := time.Parse("02.01.06", theMovieDbInfo.ReleaseDate)
-								if err != nil {
-									log.Println(err)
-									continue
-								}
-								if releaseDate.After(time.Now()) {
-									continue
-								}
-
-								movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
-							}
-
-							startYear := fields[5]
-							yearMovies := moviesByYear[startYear]
-							yearMovies = append(yearMovies, movieInfo)
-							moviesByYear[startYear] = yearMovies
-							break
-						}
-					}
-				}
-			}
-		}
-	}
-	if err := basicsScanner.Err(); err != nil {
-		log.Fatal("Error scanning title.basics.tsv.gz:", err)
-	}
-
-	// Convert map to slice for sorting
-	years := make([]string, 0, len(moviesByYear))
-	for year := range moviesByYear {
-		years = append(years, year)
-	}
-	sort.Strings(years)
-
-	// Write JSON output
 	var result []map[string]interface{}
-	for i := len(years) - 1; i >= 0; i-- {
-		year := years[i]
+	for _, year := range years {
 		yearData := map[string]interface{}{
 			"startYear": year,
 			"data":      moviesByYear[year],
@@ -208,12 +249,18 @@ func SaveLatestIMDbRatings() {
 		result = append(result, yearData)
 	}
 
-	err = encoder.Encode(result)
-	if err != nil {
-		log.Fatal("Error encoding movie info:", err)
+	if err := encoder.Encode(result); err != nil {
+		log.Fatalf("Error encoding movie info: %v", err)
 	}
+}
 
-	log.Println("Updated imdb rating list")
+func sortedYears(moviesByYear map[string][]IMDbMovieInfo) []string {
+	years := make([]string, 0, len(moviesByYear))
+	for year := range moviesByYear {
+		years = append(years, year)
+	}
+	sort.Strings(years)
+	return years
 }
 
 func downloadFile(url, filename string) error {
@@ -230,9 +277,5 @@ func downloadFile(url, filename string) error {
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

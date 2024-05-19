@@ -3,6 +3,8 @@ package telegram_bot
 import (
 	"log"
 	"nightmare_navigator/manager"
+	"nightmare_navigator/utils"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -33,11 +35,11 @@ func RunTelegramBot() {
 
 	// Function to be executed at 03:00 AM
 	executeAt0300AM := func() {
-		// Updates imdb_rating.json from the public IMDb dataset
+		// Updates imdb_movies.json from the public IMDb dataset
 		manager.SaveLatestIMDbRatings()
 
 		// Checks if there are new movies this year and sends the movie information to all bot channel users
-		newMovies := manager.SearchForNewMovies()
+		newMovies := manager.GetLatestMovies()
 		if newMovies != nil {
 			for _, movie := range *newMovies {
 				msg := tgbotapi.NewMessageToChannel("@nightmare_navigator", movie)
@@ -45,6 +47,17 @@ func RunTelegramBot() {
 				if err != nil {
 					log.Fatal(err)
 				}
+			}
+		}
+	}
+
+	newMovies := manager.GetLatestMovies()
+	if newMovies != nil {
+		for _, movie := range *newMovies {
+			msg := tgbotapi.NewMessage(190303235, movie)
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 	}
@@ -73,14 +86,14 @@ func RunTelegramBot() {
 		if update.Message == nil {
 			continue
 		}
-		// if strings.Contains(update.Message.Text, "movie") {
-		// for _, movie := range *api.GetFilteredMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
-		// 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
-		// 	_, err = bot.Send(msg)
-		// 	if err != nil {
-		// 		log.Println(err)
-		// 	}
-		// }
-		// }
+		if strings.Contains(update.Message.Text, "movie") {
+			for _, movie := range *manager.GetFilteredMovies(utils.ExtractCount(update.Message.Text), utils.ExtractGenres(update.Message.Text), utils.ExtractDate(update.Message.Text)) {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, movie)
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
 	}
 }
