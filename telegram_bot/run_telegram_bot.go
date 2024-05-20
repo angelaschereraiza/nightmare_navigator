@@ -12,7 +12,7 @@ import (
 
 func RunTelegramBot() {
 	// Initial imdb data saving
-	manager.SaveLatestIMDbRatings()
+	// manager.SaveLatestIMDbRatings()
 
 	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
@@ -51,16 +51,16 @@ func RunTelegramBot() {
 		}
 	}
 
-	newMovies := manager.GetLatestMovies()
-	if newMovies != nil {
-		for _, movie := range *newMovies {
-			msg := tgbotapi.NewMessage(190303235, movie)
-			_, err = bot.Send(msg)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
+	// newMovies := manager.GetLatestMovies()
+	// if newMovies != nil {
+	// 	for _, movie := range *newMovies {
+	// 		msg := tgbotapi.NewMessage(190303235, movie)
+	// 		_, err = bot.Send(msg)
+	// 		if err != nil {
+	// 			log.Fatal(err)
+	// 		}
+	// 	}
+	// }
 
 	// Initial execution
 	timer := time.NewTimer(durationUntilNextExecution())

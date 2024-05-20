@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -28,13 +29,11 @@ type MovieInfo struct {
 type IMDbJsonData struct {
 	Data []struct {
 		AverageRating string `json:"averageRating"`
-		Country       string `json:"country"`
 		Description   string `json:"description"`
 		Genres        string `json:"genres"`
 		NumVotes      string `json:"numVotes"`
 		OriginalTitle string `json:"originalTitle"`
 		PrimaryTitle  string `json:"primaryTitle"`
-		Rated         string `json:"rated"`
 		ReleaseDate   string `json:"releaseDate"`
 		Runtime       int    `json:"runtime"`
 		Tconst        string `json:"tconst"`
@@ -60,13 +59,11 @@ func loadIMDbData() ([]MovieInfo, error) {
 	for _, yearDatas := range movieDatas {
 		for _, movie := range yearDatas.Data {
 			movieInfos = append(movieInfos, MovieInfo{
-				Country:       movie.Country,
 				Description:   movie.Description,
 				IMDb:          movie.AverageRating,
 				IMDbVotes:     movie.NumVotes,
 				Genres:        movie.Genres,
 				OriginalTitle: movie.OriginalTitle,
-				Rated:         movie.Rated,
 				ReleaseDate:   movie.ReleaseDate,
 				Runtime:       movie.Runtime,
 				Title:         movie.PrimaryTitle,
@@ -87,6 +84,12 @@ func getIMDbInfosByYear(year string) []MovieInfo {
 
 	var moviesByYear []MovieInfo
 	for _, movie := range imdbMovieInfos {
+		omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+		if omdbMovieDbInfo != nil {
+			movie.Rated = omdbMovieDbInfo.Rated
+			movie.Country = omdbMovieDbInfo.Country
+		}
+
 		if movie.Year == year {
 			moviesByYear = append(moviesByYear, movie)
 		}
@@ -108,7 +111,15 @@ func getIMDbInfosByDateAndGenre(count int, genres []string, date time.Time) *[]M
 		year := strconv.Itoa(date.Year() - i)
 		yearMovies := filterMoviesByYear(imdbMovieInfos, year, genres, count-collectedCount)
 
-		result = append(result, yearMovies...)
+		for _, movie := range yearMovies {
+			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+			if omdbMovieDbInfo != nil {
+				movie.Rated = omdbMovieDbInfo.Rated
+				movie.Country = omdbMovieDbInfo.Country
+			}
+			result = append(result, movie)
+		}
+
 		collectedCount += len(yearMovies)
 		if len(yearMovies) == 0 {
 			break
@@ -118,8 +129,20 @@ func getIMDbInfosByDateAndGenre(count int, genres []string, date time.Time) *[]M
 	return &result
 }
 
+func sortMoviesByReleaseDate(movies []MovieInfo) {
+	sort.Slice(movies, func(i, j int) bool {
+		releaseDateI, errI := time.Parse("02.01.06", movies[i].ReleaseDate)
+		releaseDateJ, errJ := time.Parse("02.01.06", movies[j].ReleaseDate)
+		if errI != nil || errJ != nil {
+			return movies[i].ReleaseDate < movies[j].ReleaseDate
+		}
+		return releaseDateI.Before(releaseDateJ)
+	})
+}
+
 func filterMoviesByYear(movies []MovieInfo, year string, genres []string, count int) []MovieInfo {
 	var filteredMovies []MovieInfo
+	sortMoviesByReleaseDate(movies)
 
 	for _, movie := range movies {
 		if movie.Year == year && movieMatchesGenres(movie, genres) {

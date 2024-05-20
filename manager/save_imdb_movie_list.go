@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -42,12 +43,10 @@ type TitleRatings struct {
 
 type IMDbMovieInfo struct {
 	AverageRating string `json:"averageRating"`
-	Country       string `json:"country"`
 	Genres        string `json:"genres"`
 	NumVotes      string `json:"numVotes"`
 	OriginalTitle string `json:"originalTitle"`
 	PrimaryTitle  string `json:"primaryTitle"`
-	Rated         string `json:"rated"`
 	ReleaseDate   string `json:"releaseDate"`
 	Runtime       int    `json:"runtime"`
 	Description   string `json:"description"`
@@ -194,7 +193,7 @@ func createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
 			}
 
 			if i == len(genres)-1 && i != 0 {
-				genresFormatted.WriteString("and ")
+				genresFormatted.WriteString(" and ")
 			}
 			genresFormatted.WriteString(genre)
 		}
@@ -212,17 +211,13 @@ func createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
 
 func (movieInfo *IMDbMovieInfo) addAdditionalInfo(title string) {
 	theMovieDbInfo := getTheMovieDbInfoByTitle(title)
-	if theMovieDbInfo != nil {
-		movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
+	if theMovieDbInfo != nil || movieInfo.ReleaseDate != "" {
 		movieInfo.Description = theMovieDbInfo.Description
 		movieInfo.Runtime = theMovieDbInfo.Runtime
+		movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
+	} else {
+		movieInfo = nil
 	}
-
-	// omdbMovieDbInfo := getOMDbInfoByTitle(title)
-	// if omdbMovieDbInfo != nil {
-	// 	movieInfo.Rated = omdbMovieDbInfo.Rated
-	// 	movieInfo.Country = omdbMovieDbInfo.Country
-	// }
 }
 
 func containsGenre(genres []string, genre string) bool {
@@ -242,9 +237,11 @@ func writeJSON(outputFile *os.File, moviesByYear map[string][]IMDbMovieInfo) {
 
 	var result []map[string]interface{}
 	for _, year := range years {
+		movies := moviesByYear[year]
+		sortIMDbMoviesByReleaseDate(movies)
 		yearData := map[string]interface{}{
 			"startYear": year,
-			"data":      moviesByYear[year],
+			"data":      movies,
 		}
 		result = append(result, yearData)
 	}
@@ -259,8 +256,19 @@ func sortedYears(moviesByYear map[string][]IMDbMovieInfo) []string {
 	for year := range moviesByYear {
 		years = append(years, year)
 	}
-	sort.Strings(years)
+	sort.Sort(sort.Reverse(sort.StringSlice(years)))
 	return years
+}
+
+func sortIMDbMoviesByReleaseDate(movies []IMDbMovieInfo) {
+	sort.Slice(movies, func(i, j int) bool {
+		releaseDateI, errI := time.Parse("02.01.06", movies[i].ReleaseDate)
+		releaseDateJ, errJ := time.Parse("02.01.06", movies[j].ReleaseDate)
+		if errI != nil || errJ != nil {
+			return false
+		}
+		return releaseDateI.Before(releaseDateJ)
+	})
 }
 
 func downloadFile(url, filename string) error {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"time"
 )
@@ -28,8 +27,6 @@ func GetLatestMovies() *[]string {
 	movieInfos := getIMDbInfosByYear(currentYear)
 	newMovies := filterAlreadyReturnedMovies(movieInfos)
 
-	sortMoviesByReleaseDate(newMovies)
-
 	for _, movie := range newMovies {
 		alreadyReturnedMovies[movie.Title] = true
 	}
@@ -39,7 +36,7 @@ func GetLatestMovies() *[]string {
 	}
 
 	movieStrings := buildMovieInfoStrings(newMovies)
-	
+
 	return movieStrings
 }
 
@@ -51,17 +48,6 @@ func filterAlreadyReturnedMovies(imdbRatingsMovies []MovieInfo) []MovieInfo {
 		}
 	}
 	return filteredMovies
-}
-
-func sortMoviesByReleaseDate(movies []MovieInfo) {
-	sort.Slice(movies, func(i, j int) bool {
-		releaseDateI, errI := time.Parse("02.01.06", movies[i].ReleaseDate)
-		releaseDateJ, errJ := time.Parse("02.01.06", movies[j].ReleaseDate)
-		if errI != nil || errJ != nil {
-			return movies[i].ReleaseDate < movies[j].ReleaseDate
-		}
-		return releaseDateI.Before(releaseDateJ)
-	})
 }
 
 func saveReturnedMovies() error {
