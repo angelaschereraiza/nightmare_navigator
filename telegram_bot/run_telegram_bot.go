@@ -12,7 +12,7 @@ import (
 
 func RunTelegramBot() {
 	// Initial imdb data saving
-	// manager.SaveLatestIMDbRatings()
+	manager.SaveLatestIMDbRatings()
 
 	// Starts telegram bot
 	bot, err := tgbotapi.NewBotAPI("6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc")
@@ -23,7 +23,7 @@ func RunTelegramBot() {
 	bot.Debug = true
 	log.Printf("Bot started as %s", bot.Self.UserName)
 
-	// Function to calculate the duration until the next 03:00
+	// Function to calculate the duration until the next 03:00 AM
 	durationUntilNextExecution := func() time.Duration {
 		now := time.Now()
 		nextExecution := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, now.Location())
@@ -50,17 +50,6 @@ func RunTelegramBot() {
 			}
 		}
 	}
-
-	// newMovies := manager.GetLatestMovies()
-	// if newMovies != nil {
-	// 	for _, movie := range *newMovies {
-	// 		msg := tgbotapi.NewMessage(190303235, movie)
-	// 		_, err = bot.Send(msg)
-	// 		if err != nil {
-	// 			log.Fatal(err)
-	// 		}
-	// 	}
-	// }
 
 	// Initial execution
 	timer := time.NewTimer(durationUntilNextExecution())

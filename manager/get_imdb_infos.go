@@ -83,14 +83,15 @@ func getIMDbInfosByYear(year string) []MovieInfo {
 	}
 
 	var moviesByYear []MovieInfo
-	for _, movie := range imdbMovieInfos {
-		omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
-		if omdbMovieDbInfo != nil {
-			movie.Rated = omdbMovieDbInfo.Rated
-			movie.Country = omdbMovieDbInfo.Country
-		}
 
+	for _, movie := range imdbMovieInfos {
 		if movie.Year == year {
+			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+			if omdbMovieDbInfo != nil {
+				movie.Rated = omdbMovieDbInfo.Rated
+				movie.Country = omdbMovieDbInfo.Country
+			}
+
 			moviesByYear = append(moviesByYear, movie)
 		}
 	}
@@ -109,20 +110,21 @@ func getIMDbInfosByDateAndGenre(count int, genres []string, date time.Time) *[]M
 
 	for i := 0; collectedCount < count; i++ {
 		year := strconv.Itoa(date.Year() - i)
-		yearMovies := filterMoviesByYear(imdbMovieInfos, year, genres, count-collectedCount)
+		yearMovies := filterMoviesByYear(imdbMovieInfos, year, date, genres, count-collectedCount)
 
 		for _, movie := range yearMovies {
 			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+
 			if omdbMovieDbInfo != nil {
 				movie.Rated = omdbMovieDbInfo.Rated
 				movie.Country = omdbMovieDbInfo.Country
 			}
 			result = append(result, movie)
-		}
 
-		collectedCount += len(yearMovies)
-		if len(yearMovies) == 0 {
-			break
+			collectedCount += len(yearMovies)
+			if len(yearMovies) == 0 {
+				break
+			}
 		}
 	}
 
@@ -136,16 +138,16 @@ func sortMoviesByReleaseDate(movies []MovieInfo) {
 		if errI != nil || errJ != nil {
 			return movies[i].ReleaseDate < movies[j].ReleaseDate
 		}
-		return releaseDateI.Before(releaseDateJ)
+		return releaseDateI.After(releaseDateJ)
 	})
 }
 
-func filterMoviesByYear(movies []MovieInfo, year string, genres []string, count int) []MovieInfo {
+func filterMoviesByYear(movies []MovieInfo, year string, date time.Time, genres []string, count int) []MovieInfo {
 	var filteredMovies []MovieInfo
 	sortMoviesByReleaseDate(movies)
 
 	for _, movie := range movies {
-		if movie.Year == year && movieMatchesGenres(movie, genres) {
+		if movie.Year == year && movieMatchesGenres(movie, genres) && movieMatchDate(movie, date) {
 			filteredMovies = append(filteredMovies, movie)
 			if len(filteredMovies) >= count {
 				break
@@ -157,7 +159,7 @@ func filterMoviesByYear(movies []MovieInfo, year string, genres []string, count 
 }
 
 func movieMatchesGenres(movie MovieInfo, genres []string) bool {
-	movieGenres := strings.Split(movie.Genres, ",")
+	movieGenres := splitGenres(movie.Genres)
 	for _, genre := range genres {
 		found := false
 		for _, movieGenre := range movieGenres {
@@ -171,4 +173,29 @@ func movieMatchesGenres(movie MovieInfo, genres []string) bool {
 		}
 	}
 	return true
+}
+
+func splitGenres(genres string) []string {
+	parts := strings.Split(genres, " and ")
+	result := []string{}
+
+	for _, part := range parts {
+		subParts := strings.Split(part, ", ")
+		for _, subPart := range subParts {
+			result = append(result, strings.TrimSpace(subPart))
+		}
+	}
+
+	return result
+}
+
+func movieMatchDate(movie MovieInfo, date time.Time) bool {
+	releaseDate, err := time.Parse("02.01.06", movie.ReleaseDate)
+
+	if err != nil {
+		log.Println("Error parse release date", err)
+		return false
+	}
+
+	return !releaseDate.After(date)
 }

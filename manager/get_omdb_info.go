@@ -9,7 +9,7 @@ import (
 
 const (
 	omdbApiURL = "http://www.omdbapi.com/"
-	omdbApiKey = "d0bd48a2"
+	omdbApiKey = "3f026020"
 )
 
 type OMDbMovieInfo struct {

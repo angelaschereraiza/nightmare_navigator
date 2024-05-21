@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -23,55 +24,63 @@ type GenresResponse struct {
 	Genres []Genre `json:"genres"`
 }
 
-type TheMovieDbInfo struct {
+type TMDBInfo struct {
 	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	ReleaseDate string `json:"release_date"`
 	Overview    string `json:"overview"`
+	ReleaseDate string `json:"release_date"`
+	Runtime     int
+	Title       string `json:"title"`
 }
 
-type TheMovieDbInfos struct {
-	Results []TheMovieDbInfo `json:"results"`
+type TMDBInfos struct {
+	Results []TMDBInfo `json:"results"`
 }
 
 type MovieDetailsResponse struct {
 	Runtime int `json:"runtime"`
 }
 
-func getTheMovieDbInfoByTitle(title string) *MovieInfo {
+func getTMDBInfoByTitle(title string, year string) *TMDBInfo {
 	// Fetch movie details from The Movie Database (TMDb) API
 	params := url.Values{}
 	params.Set("api_key", apiKey)
 	params.Set("query", title)
 	searchURL := fmt.Sprintf("%s/search/movie?%s", baseURL, params.Encode())
 
-	theMovieDbInfos, err := fetchMovieSearchResults(searchURL)
-	if err != nil || len(theMovieDbInfos.Results) == 0 {
+	tmdbInfos, err := fetchMovieSearchResults(searchURL)
+	if err != nil || len(tmdbInfos.Results) == 0 {
 		return nil
 	}
 
-	theMovieDbInfo := theMovieDbInfos.Results[0]
-	movieInfo := &MovieInfo{
-		Description: theMovieDbInfo.Overview,
+	movieInfo := TMDBInfo{}
+
+	for _, movie := range tmdbInfos.Results {
+		releaseDate := setReleaseDate(movie.ReleaseDate, year)
+		if releaseDate == nil {
+			continue
+		}
+
+		movieInfo = movie
+		movieInfo.ReleaseDate = *releaseDate
+
+		// Fetch additional movie details (runtime) from TMDb API
+		movieDetailsURL := fmt.Sprintf("%s/movie/%d?api_key=%s", baseURL, movie.ID, apiKey)
+		movieDetails, err := fetchMovieDetails(movieDetailsURL)
+		if err != nil {
+			return nil
+		}
+
+		movieInfo.Runtime = movieDetails.Runtime
 	}
 
-	if err := setReleaseDate(movieInfo, theMovieDbInfo.ReleaseDate); err != nil {
-		log.Println("Error parsing release date:", err)
+	if movieInfo.ReleaseDate == "" {
 		return nil
 	}
 
-	// Fetch additional movie details (runtime) from TMDb API
-	movieDetailsURL := fmt.Sprintf("%s/movie/%d?api_key=%s", baseURL, theMovieDbInfo.ID, apiKey)
-	movieDetails, err := fetchMovieDetails(movieDetailsURL)
-	if err != nil {
-		return nil
-	}
-
-	movieInfo.Runtime = movieDetails.Runtime
-	return movieInfo
+	return &movieInfo
 }
 
-func fetchMovieSearchResults(url string) (*TheMovieDbInfos, error) {
+func fetchMovieSearchResults(url string) (*TMDBInfos, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		log.Println("Error making request:", err)
@@ -84,13 +93,13 @@ func fetchMovieSearchResults(url string) (*TheMovieDbInfos, error) {
 		return nil, fmt.Errorf("received non-200 response code: %d", res.StatusCode)
 	}
 
-	var theMovieDbInfos TheMovieDbInfos
-	if err := json.NewDecoder(res.Body).Decode(&theMovieDbInfos); err != nil {
+	var tmdbInfos TMDBInfos
+	if err := json.NewDecoder(res.Body).Decode(&tmdbInfos); err != nil {
 		log.Println("Error decoding JSON response:", err)
 		return nil, err
 	}
 
-	return &theMovieDbInfos, nil
+	return &tmdbInfos, nil
 }
 
 func fetchMovieDetails(url string) (*MovieDetailsResponse, error) {
@@ -115,20 +124,28 @@ func fetchMovieDetails(url string) (*MovieDetailsResponse, error) {
 	return &movieDetails, nil
 }
 
-func setReleaseDate(movieInfo *MovieInfo, releaseDate string) error {
+func setReleaseDate(releaseDate string, year string) *string {
 	if releaseDate == "" {
 		return nil
 	}
 
 	parsedDate, err := time.Parse("2006-01-02", releaseDate)
 	if err != nil {
-		return err
+		log.Println("Error parse release date", err)
+		return nil
+	}
+
+	if strconv.Itoa(parsedDate.Year()) != year {
+		log.Printf("release date is not in the same year. Release date: %s, year: %s", parsedDate.Format("02.01.06"), year)
+		return nil
 	}
 
 	if parsedDate.After(time.Now()) {
-		return fmt.Errorf("release date is in the future")
+		log.Println("release date is in the future")
+		return nil
 	}
 
-	movieInfo.ReleaseDate = parsedDate.Format("02.01.06")
-	return nil
+	releaseDate = parsedDate.Format("02.01.06")
+
+	return &releaseDate
 }

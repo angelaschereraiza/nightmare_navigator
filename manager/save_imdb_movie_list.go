@@ -154,7 +154,7 @@ func loadBasicsAndFilter(file *os.File, ratings map[string]*TitleRatings) map[st
 	for scanner.Scan() {
 		fields := strings.Split(scanner.Text(), "\t")
 		if len(fields) >= 9 && fields[1] == "movie" {
-			processMovie(fields, ratings, moviesByYear)
+			filterMovieAndGetAdditionalInfo(fields, ratings, moviesByYear)
 		}
 	}
 
@@ -165,18 +165,20 @@ func loadBasicsAndFilter(file *os.File, ratings map[string]*TitleRatings) map[st
 	return moviesByYear
 }
 
-func processMovie(fields []string, ratings map[string]*TitleRatings, moviesByYear map[string][]IMDbMovieInfo) {
+func filterMovieAndGetAdditionalInfo(fields []string, ratings map[string]*TitleRatings, moviesByYear map[string][]IMDbMovieInfo) {
 	if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= minRating && rating.NumVotes >= minVotes {
 		genres := strings.Split(fields[8], ",")
 		if containsGenre(genres, horrorGenre) && !containsGenre(genres, "Romance") && !containsGenre(genres, "Family") {
 			movieInfo := createMovieInfo(fields, rating)
-			if movieInfo == nil {
+			startYear := fields[5]
+			movieInfo.addAdditionalInfo(startYear)
+
+			if movieInfo == nil || movieInfo.ReleaseDate == "" {
 				return
 			}
-
-			movieInfo.addAdditionalInfo(fields[3])
-			startYear := fields[5]
+			
 			moviesByYear[startYear] = append(moviesByYear[startYear], *movieInfo)
+
 		}
 	}
 }
@@ -209,14 +211,12 @@ func createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
 	}
 }
 
-func (movieInfo *IMDbMovieInfo) addAdditionalInfo(title string) {
-	theMovieDbInfo := getTheMovieDbInfoByTitle(title)
-	if theMovieDbInfo != nil || movieInfo.ReleaseDate != "" {
-		movieInfo.Description = theMovieDbInfo.Description
-		movieInfo.Runtime = theMovieDbInfo.Runtime
-		movieInfo.ReleaseDate = theMovieDbInfo.ReleaseDate
-	} else {
-		movieInfo = nil
+func (imdbInfo *IMDbMovieInfo) addAdditionalInfo(year string) {
+	tmdbInfo := getTMDBInfoByTitle(imdbInfo.PrimaryTitle, year)
+	if tmdbInfo != nil {
+		imdbInfo.Description = tmdbInfo.Overview
+		imdbInfo.Runtime = tmdbInfo.Runtime
+		imdbInfo.ReleaseDate = tmdbInfo.ReleaseDate
 	}
 }
 

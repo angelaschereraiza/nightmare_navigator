@@ -10,6 +10,7 @@ func GetFilteredMovies(count int, genres []string, date time.Time) *[]string {
 	}
 
 	movies := getIMDbInfosByDateAndGenre(count, genres, date)
+
 	if movies == nil || len(*movies) == 0 {
 		return &[]string{}
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 // Default values
-const defaultCount = 20
+const defaultCount = 10
 var defaultGenres = []string{"Horror"}
 
 // Precompiled regular expressions for genre extraction
@@ -19,21 +19,23 @@ var genreRegex = map[string]*regexp.Regexp{
 	"Fantasy":   regexp.MustCompile(`\b(fantasy)\b`),
 	"Thriller":  regexp.MustCompile(`\b(thriller)\b`),
 	"Animation": regexp.MustCompile(`\b(animation)\b`),
+	"Mystery":   regexp.MustCompile(`\b(mystery)\b`),
 }
 
-// ExtractCount extracts the first integer found in the text. Defaults to 20 if no integer is found.
 func ExtractCount(text string) int {
+	numStr := ""
 	for _, char := range text {
 		if unicode.IsDigit(char) {
-			numStr := string(char)
-			return parseFirstInt(numStr, defaultCount)
+			numStr += string(char)
+		} else if len(numStr) > 0 {
+			break
 		}
 	}
-	return defaultCount
-}
 
-// parseFirstInt converts the first found numeric string to an integer. Returns defaultCount on failure.
-func parseFirstInt(numStr string, defaultCount int) int {
+	if numStr == "" {
+		return defaultCount
+	}
+
 	count, err := strconv.Atoi(numStr)
 	if err != nil {
 		log.Printf("Error converting %s to int: %v", numStr, err)
