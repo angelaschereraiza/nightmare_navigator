@@ -1,7 +1,7 @@
 .ONESHELL:
 .PHONY: deploy
 deploy:
-	go build -o nightmare_navigator main.go 
+	go build -o nightmare_navigator cmd/nightmare_navigator/main.go 
 	sync
 	strip nightmare_navigator
 	ssh aiza.ch mkdir -p nightmare_navigator
