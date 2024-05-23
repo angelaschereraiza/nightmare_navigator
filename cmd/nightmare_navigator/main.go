@@ -1,6 +1,6 @@
 package main
 
-import ( 
+import (
 	"nightmare_navigator/internal/telegram_bot"
 )
 

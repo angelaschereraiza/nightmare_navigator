@@ -1,1 +1,0 @@
-package movie_infos_test
