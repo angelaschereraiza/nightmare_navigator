@@ -8,20 +8,32 @@ import (
 
 	"io/fs"
 	movieinfo "nightmare_navigator/internal/movie_info"
+	"nightmare_navigator/internal/config"
 )
 
-func createTempIMDbJSON(t *testing.T, content string) {
+func createTempIMDbJSON(t *testing.T, content string) config.Config {
 	t.Helper()
 
-	err := os.MkdirAll(downloadDir, os.ModePerm)
+	cfg := config.Config{
+		General: config.General{
+			DataDir:  "data",
+		},
+		IMDb: config.IMDb{
+			JSONFilename:  "imdb_movie_infos.json",
+		},
+	}
+
+	err := os.MkdirAll(cfg.General.DataDir, os.ModePerm)
 	if err != nil {
 		t.Fatalf("could not create temp dir: %v", err)
 	}
 
-	err = os.WriteFile(filepath.Join(downloadDir, jsonFilename), []byte(content), fs.FileMode(0644))
+	err = os.WriteFile(filepath.Join(cfg.General.DataDir, cfg.IMDb.JSONFilename), []byte(content), fs.FileMode(0644))
 	if err != nil {
 		t.Fatalf("could not write temp file: %v", err)
 	}
+
+	return cfg
 }
 
 func TestLoadIMDbData(t *testing.T) {
@@ -45,8 +57,8 @@ func TestLoadIMDbData(t *testing.T) {
 		}
 	]`
 
-	createTempIMDbJSON(t, jsonContent)
-	defer os.RemoveAll(downloadDir)
+	cfg := createTempIMDbJSON(t, jsonContent)
+	defer os.RemoveAll(cfg.General.DataDir)
 
 	expected := []movieinfo.MovieInfo{
 		{
@@ -63,7 +75,7 @@ func TestLoadIMDbData(t *testing.T) {
 		},
 	}
 
-	movieInfos, err := loadIMDbData()
+	movieInfos, err := loadIMDbData(cfg)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %v", err)
 	}
@@ -93,8 +105,8 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 		}
 	]`
 
-	createTempIMDbJSON(t, jsonContent)
-	defer os.RemoveAll(downloadDir)
+	cfg := createTempIMDbJSON(t, jsonContent)
+	defer os.RemoveAll(cfg.General.DataDir)
 
 	expected := []movieinfo.MovieInfo{
 		{
@@ -120,7 +132,7 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 		}
 	}
 
-	moviesByYear := GetIMDbInfosByYear("1997", mockGetOMDbInfoByTitle)
+	moviesByYear := GetIMDbInfosByYear(cfg, "1997", mockGetOMDbInfoByTitle)
 	if !equal(moviesByYear, expected) {
 		t.Fatalf("Expected %v, but got %v", expected, moviesByYear)
 	}
@@ -147,8 +159,8 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 		}
 	]`
 
-	createTempIMDbJSON(t, jsonContent)
-	defer os.RemoveAll(downloadDir)
+	cfg := createTempIMDbJSON(t, jsonContent)
+	defer os.RemoveAll(cfg.General.DataDir)
 
 	expected := []movieinfo.MovieInfo{
 		{
@@ -175,7 +187,7 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	}
 
 	date, _ := time.Parse("02.01.06", "01.01.21")
-	result := GetIMDbInfosByDateAndGenre(1, []string{"Horror", "Sci-Fi"}, date, mockGetOMDbInfoByTitle)
+	result := GetIMDbInfosByDateAndGenre(cfg, 1, []string{"Horror", "Sci-Fi"}, date, mockGetOMDbInfoByTitle)
 	if !equal(*result, expected) {
 		t.Fatalf("Expected %v, but got %v", expected, *result)
 	}

@@ -23,7 +23,7 @@ func RunTelegramBot() {
 	}
 
 	imdbManager := imdb.NewSaveIMDbInfoManager(*cfg)
-	// imdbManager.SaveLatestIMDbRatings()
+	imdbManager.SaveLatestIMDbRatings()
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
 	if err != nil {

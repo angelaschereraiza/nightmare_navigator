@@ -15,7 +15,7 @@ import (
 var alreadyReturnedMovies = make(map[string]bool)
 var alreadyReturnedMoviesFile = ""
 
-type GetIMDbInfosByYearFunc func(string, func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo
+type GetIMDbInfosByYearFunc func(config.Config, string, func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo
 type BuildMovieInfoStringsFunc func([]movieinfo.MovieInfo) *[]string
 
 type LatestMoviesManager struct {
@@ -50,7 +50,7 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 	}
 
 	currentYear := strconv.Itoa(time.Now().Year())
-	movieInfos := getIMDbInfosByYear(currentYear, getOMDbInfoByTitle)
+	movieInfos := getIMDbInfosByYear(mgr.cfg, currentYear, getOMDbInfoByTitle)
 	newMovies := filterAlreadyReturnedMovies(movieInfos)
 
 	for _, movie := range newMovies {

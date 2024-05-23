@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	movieinfo "nightmare_navigator/internal/movie_info"
+	"nightmare_navigator/internal/config"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,10 +12,6 @@ import (
 	"strings"
 	"time"
 )
-
-const jsonFilename = "imdb_movie_infos.json"
-
-var downloadDir = "data"
 
 type IMDbJsonData struct {
 	Data []struct {
@@ -31,8 +28,8 @@ type IMDbJsonData struct {
 	StartYear string `json:"startYear"`
 }
 
-func loadIMDbData() ([]movieinfo.MovieInfo, error) {
-	file, err := os.Open(filepath.Join(downloadDir, jsonFilename))
+func loadIMDbData(cfg config.Config) ([]movieinfo.MovieInfo, error) {
+	file, err := os.Open(filepath.Join("data", cfg.IMDb.JSONFilename))
 	if err != nil {
 		log.Println("Error opening IMDb JSON file:", err)
 		return nil, err
@@ -66,8 +63,8 @@ func loadIMDbData() ([]movieinfo.MovieInfo, error) {
 	return movieInfos, nil
 }
 
-func GetIMDbInfosByYear(year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
-	imdbMovieInfos, err := loadIMDbData()
+func GetIMDbInfosByYear(cfg config.Config, year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
+	imdbMovieInfos, err := loadIMDbData(cfg)
 	if err != nil {
 		return nil
 	}
@@ -89,8 +86,8 @@ func GetIMDbInfosByYear(year string, getOMDbInfoByTitle func(string) *movieinfo.
 	return moviesByYear
 }
 
-func GetIMDbInfosByDateAndGenre(count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo {
-	imdbMovieInfos, err := loadIMDbData()
+func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo {
+	imdbMovieInfos, err := loadIMDbData(cfg)
 	if err != nil {
 		return nil
 	}

@@ -37,11 +37,15 @@ func TestSaveLatestIMDbRatings(t *testing.T) {
 		IMDb: config.IMDb{
 			BasicsFilename:  "title.basics.tsv.gz",
 			RatingsFilename: "title.ratings.tsv.gz",
-			JSONFilename:    "imdb_movies_infos_test.json",
+			JSONFilename:    "imdb_movie_infos_test.json",
 			DownloadDir:     "data",
 			IMDbBaseUrl:     mockServer.URL + "/",
 			MinRating:       5.0,
-			MinVotes:        10000,
+			MinVotes:        1000,
+		},
+		TMDb: config.TMDb{
+			ApiKey: "6882b8441ce200fda300c1e46eeb3e64",
+			ApiURL: "https://api.themoviedb.org/3",
 		},
 	}
 

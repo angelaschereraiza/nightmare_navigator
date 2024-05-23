@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetLatestMovieInfos(t *testing.T) {
-	mockGetIMDbInfosByYear := func(year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
+	mockGetIMDbInfosByYear := func(cfg config.Config, year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
 		return []movieinfo.MovieInfo{
 			{Title: "Movie1", Year: year},
 			{Title: "Movie2", Year: year},

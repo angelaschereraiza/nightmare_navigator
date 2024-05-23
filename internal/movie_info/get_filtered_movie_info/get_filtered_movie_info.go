@@ -8,7 +8,7 @@ import (
 	"nightmare_navigator/internal/config"
 )
 
-type GetIMDbInfosByDateAndGenreFunc func(int, []string, time.Time, func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo
+type GetIMDbInfosByDateAndGenreFunc func(config.Config, int, []string, time.Time, func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo
 type BuildMovieInfoStringsFunc func([]movieinfo.MovieInfo) *[]string
 
 func GetFilteredMovieInfos(count int, genres []string, date time.Time, getIMDbInfosByDateAndGenre GetIMDbInfosByDateAndGenreFunc, buildMovieInfoStrings BuildMovieInfoStringsFunc, cfg config.Config) *[]string {
@@ -28,7 +28,7 @@ func GetFilteredMovieInfos(count int, genres []string, date time.Time, getIMDbIn
 		}
 	}
 
-	movies := getIMDbInfosByDateAndGenre(count, genres, date, getOMDbInfoByTitle)
+	movies := getIMDbInfosByDateAndGenre(cfg, count, genres, date, getOMDbInfoByTitle)
 
 	if movies == nil || len(*movies) == 0 {
 		return &[]string{}
