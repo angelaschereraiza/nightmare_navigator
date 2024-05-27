@@ -1,9 +1,8 @@
-package get_imdb_info
+package movie_info
 
 import (
 	"encoding/json"
 	"log"
-	movieinfo "nightmare_navigator/internal/movie_info"
 	"nightmare_navigator/internal/config"
 	"os"
 	"path/filepath"
@@ -28,7 +27,7 @@ type IMDbJsonData struct {
 	StartYear string `json:"startYear"`
 }
 
-func loadIMDbData(cfg config.Config) ([]movieinfo.MovieInfo, error) {
+func loadIMDbData(cfg config.Config) ([]MovieInfo, error) {
 	file, err := os.Open(filepath.Join("data", cfg.IMDb.JSONFilename))
 	if err != nil {
 		log.Println("Error opening IMDb JSON file:", err)
@@ -42,10 +41,10 @@ func loadIMDbData(cfg config.Config) ([]movieinfo.MovieInfo, error) {
 		return nil, err
 	}
 
-	var movieInfos []movieinfo.MovieInfo
+	var movieInfos []MovieInfo
 	for _, yearDatas := range movieDatas {
 		for _, movie := range yearDatas.Data {
-			movieInfos = append(movieInfos, movieinfo.MovieInfo{
+			movieInfos = append(movieInfos, MovieInfo{
 				Description:   movie.Description,
 				IMDb:          movie.AverageRating,
 				IMDbVotes:     movie.NumVotes,
@@ -63,13 +62,13 @@ func loadIMDbData(cfg config.Config) ([]movieinfo.MovieInfo, error) {
 	return movieInfos, nil
 }
 
-func GetIMDbInfosByYear(cfg config.Config, year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
+func GetIMDbInfosByYear(cfg config.Config, year string, getOMDbInfoByTitle func(string) *MovieInfo) []MovieInfo {
 	imdbMovieInfos, err := loadIMDbData(cfg)
 	if err != nil {
 		return nil
 	}
 
-	var moviesByYear []movieinfo.MovieInfo
+	var moviesByYear []MovieInfo
 
 	for _, movie := range imdbMovieInfos {
 		if movie.Year == year {
@@ -86,13 +85,13 @@ func GetIMDbInfosByYear(cfg config.Config, year string, getOMDbInfoByTitle func(
 	return moviesByYear
 }
 
-func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo {
+func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *MovieInfo) *[]MovieInfo {
 	imdbMovieInfos, err := loadIMDbData(cfg)
 	if err != nil {
 		return nil
 	}
 
-	var result []movieinfo.MovieInfo
+	var result []MovieInfo
 	collectedCount := 0
 
 	for i := 0; collectedCount < count; i++ {
@@ -118,7 +117,7 @@ func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, d
 	return &result
 }
 
-func sortMoviesByReleaseDate(movies []movieinfo.MovieInfo) {
+func sortMoviesByReleaseDate(movies []MovieInfo) {
 	sort.Slice(movies, func(i, j int) bool {
 		releaseDateI, errI := time.Parse("02.01.06", movies[i].ReleaseDate)
 		releaseDateJ, errJ := time.Parse("02.01.06", movies[j].ReleaseDate)
@@ -129,8 +128,8 @@ func sortMoviesByReleaseDate(movies []movieinfo.MovieInfo) {
 	})
 }
 
-func filterMoviesByYear(movies []movieinfo.MovieInfo, year string, date time.Time, genres []string, count int) []movieinfo.MovieInfo {
-	var filteredMovies []movieinfo.MovieInfo
+func filterMoviesByYear(movies []MovieInfo, year string, date time.Time, genres []string, count int) []MovieInfo {
+	var filteredMovies []MovieInfo
 	sortMoviesByReleaseDate(movies)
 
 	for _, movie := range movies {
@@ -145,7 +144,7 @@ func filterMoviesByYear(movies []movieinfo.MovieInfo, year string, date time.Tim
 	return filteredMovies
 }
 
-func movieMatchesGenres(movie movieinfo.MovieInfo, genres []string) bool {
+func movieMatchesGenres(movie MovieInfo, genres []string) bool {
 	movieGenres := splitGenres(movie.Genres)
 	for _, genre := range genres {
 		found := false
@@ -176,7 +175,7 @@ func splitGenres(genres string) []string {
 	return result
 }
 
-func movieMatchDate(movie movieinfo.MovieInfo, date time.Time) bool {
+func movieMatchDate(movie MovieInfo, date time.Time) bool {
 	releaseDate, err := time.Parse("02.01.06", movie.ReleaseDate)
 
 	if err != nil {

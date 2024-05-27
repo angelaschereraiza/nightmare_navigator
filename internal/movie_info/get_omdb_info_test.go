@@ -1,11 +1,11 @@
-package get_omdb_info
+package movie_info
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"nightmare_navigator/internal/config"
+	"testing"
 )
 
 func TestGetOMDbInfoByTitle(t *testing.T) {
@@ -27,8 +27,8 @@ func TestGetOMDbInfoByTitle(t *testing.T) {
 
 	cfg := config.Config{
 		OMDb: config.OMDb{
-			ApiKey:  "dummy_api_key",
-			ApiURL:  mockServer.URL,
+			ApiKey: "dummy_api_key",
+			ApiURL: mockServer.URL,
 		},
 	}
 

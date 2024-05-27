@@ -1,4 +1,4 @@
-package get_tmdb_info
+package movie_info
 
 import (
 	"encoding/json"

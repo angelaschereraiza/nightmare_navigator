@@ -1,7 +1,6 @@
-package build_movie_info_string
+package movie_info
 
 import (
-	movieinfo "nightmare_navigator/internal/movie_info"
 	"reflect"
 	"strings"
 	"testing"
@@ -9,11 +8,11 @@ import (
 
 func TestBuildMovieInfoString(t *testing.T) {
 	tests := []struct {
-		movieInfo movieinfo.MovieInfo
+		movieInfo MovieInfo
 		expected  string
 	}{
 		{
-			movieInfo: movieinfo.MovieInfo{
+			movieInfo: MovieInfo{
 				Title:         "Event Horizon",
 				OriginalTitle: "",
 				IMDb:          "6.7",
@@ -39,7 +38,7 @@ Description: A rescue crew investigates a spaceship that disappeared into a blac
 `,
 		},
 		{
-			movieInfo: movieinfo.MovieInfo{
+			movieInfo: MovieInfo{
 				Title:         "The Grudge",
 				OriginalTitle: "呪怨",
 				IMDb:          "4.3",
@@ -79,7 +78,7 @@ Description: A house is cursed by a vengeful ghost that dooms those who enter it
 }
 
 func TestBuildMovieInfoStrings(t *testing.T) {
-	movieInfos := []movieinfo.MovieInfo{
+	movieInfos := []MovieInfo{
 		{
 			Title:         "Event Horizon",
 			OriginalTitle: "",

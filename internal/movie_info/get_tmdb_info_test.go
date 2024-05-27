@@ -1,4 +1,4 @@
-package get_tmdb_info
+package movie_info
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ func TestGetTMDbInfoByTitle(t *testing.T) {
 
 	cfg := config.Config{
 		TMDb: config.TMDb{
-			ApiKey:  "dummy_api_key",
+			ApiKey: "dummy_api_key",
 			ApiURL: mockServer.URL,
 		},
 	}

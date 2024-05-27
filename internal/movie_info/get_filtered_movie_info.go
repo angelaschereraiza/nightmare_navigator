@@ -1,28 +1,26 @@
-package get_filtered_movie_info
+package movie_info
 
 import (
 	"time"
 
-	movieinfo "nightmare_navigator/internal/movie_info"
-	omdb "nightmare_navigator/internal/movie_info/get_omdb_info"
 	"nightmare_navigator/internal/config"
 )
 
-type GetIMDbInfosByDateAndGenreFunc func(config.Config, int, []string, time.Time, func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo
-type BuildMovieInfoStringsFunc func([]movieinfo.MovieInfo) *[]string
+type GetIMDbInfosByDateAndGenreFunc func(config.Config, int, []string, time.Time, func(string) *MovieInfo) *[]MovieInfo
+type BuildMovieInfoStringsFunc func([]MovieInfo) *[]string
 
 func GetFilteredMovieInfos(count int, genres []string, date time.Time, getIMDbInfosByDateAndGenre GetIMDbInfosByDateAndGenreFunc, buildMovieInfoStrings BuildMovieInfoStringsFunc, cfg config.Config) *[]string {
 	if count <= 0 {
 		return &[]string{}
 	}
 
-	getOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
-		manager := omdb.NewOMDbManager(cfg)
+	getOMDbInfoByTitle := func(title string) *MovieInfo {
+		manager := NewOMDbManager(cfg)
 		omdbInfo := manager.GetOMDbInfoByTitle(title)
 		if omdbInfo == nil {
 			return nil
 		}
-		return &movieinfo.MovieInfo{
+		return &MovieInfo{
 			Rated:   omdbInfo.Rated,
 			Country: omdbInfo.Country,
 		}

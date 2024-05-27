@@ -6,11 +6,7 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
-	buildstring "nightmare_navigator/internal/movie_info/build_movie_info_string"
-	filteredinfo "nightmare_navigator/internal/movie_info/get_filtered_movie_info"
-	imdbinfo "nightmare_navigator/internal/movie_info/get_imdb_info"
-	latestinfo "nightmare_navigator/internal/movie_info/get_latest_movie_info"
-	imdb "nightmare_navigator/internal/movie_info/save_imdb_info"
+	movieinfo "nightmare_navigator/internal/movie_info"
 	"nightmare_navigator/internal/util"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -22,7 +18,7 @@ func RunTelegramBot() {
 		log.Fatalf("error: %v", err)
 	}
 
-	imdbManager := imdb.NewSaveIMDbInfoManager(*cfg)
+	imdbManager := movieinfo.NewSaveIMDbInfoManager(*cfg)
 	imdbManager.SaveLatestIMDbRatings()
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
@@ -68,12 +64,12 @@ func RunTelegramBot() {
 			continue
 		}
 		if strings.Contains(update.Message.Text, "movie") {
-			movieInfos := filteredinfo.GetFilteredMovieInfos(
+			movieInfos := movieinfo.GetFilteredMovieInfos(
 				util.ExtractCount(update.Message.Text),
 				util.ExtractGenres(update.Message.Text),
 				util.ExtractDate(update.Message.Text),
-				imdbinfo.GetIMDbInfosByDateAndGenre,
-				buildstring.BuildMovieInfoStrings,
+				movieinfo.GetIMDbInfosByDateAndGenre,
+				movieinfo.BuildMovieInfoStrings,
 				*cfg,
 			)
 
@@ -97,10 +93,10 @@ func durationUntilNextExecution() time.Duration {
 	return nextExecution.Sub(now)
 }
 
-func executeAt0300AM(bot *tgbotapi.BotAPI, channelName string, imdbManager imdb.SaveIMDbInfoManager, cfg config.Config) {
+func executeAt0300AM(bot *tgbotapi.BotAPI, channelName string, imdbManager movieinfo.SaveIMDbInfoManager, cfg config.Config) {
 	imdbManager.SaveLatestIMDbRatings()
-	latestMoviesManager := latestinfo.NewLatestMoviesManager(cfg)
-	newMovies := latestMoviesManager.GetLatestMovieInfos(imdbinfo.GetIMDbInfosByYear, buildstring.BuildMovieInfoStrings)
+	latestMoviesManager := movieinfo.NewLatestMoviesManager(cfg)
+	newMovies := latestMoviesManager.GetLatestMovieInfos(movieinfo.GetIMDbInfosByYear, movieinfo.BuildMovieInfoStrings)
 	if newMovies != nil {
 		for _, movie := range *newMovies {
 			msg := tgbotapi.NewMessageToChannel(channelName, movie)

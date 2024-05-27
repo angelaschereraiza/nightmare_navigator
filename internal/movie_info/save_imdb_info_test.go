@@ -1,4 +1,4 @@
-package save_imdb_info
+package movie_info
 
 import (
 	"bytes"

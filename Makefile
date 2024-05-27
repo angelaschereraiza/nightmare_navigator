@@ -15,3 +15,5 @@ deploy:
 .PHONY: stop
 stop:
 	ssh aiza.ch	pkill -f nightmare_navigator || true
+test:
+	go test --cover ./...

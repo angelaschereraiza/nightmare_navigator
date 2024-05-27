@@ -1,4 +1,4 @@
-package get_imdb_info
+package movie_info
 
 import (
 	"os"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"io/fs"
-	movieinfo "nightmare_navigator/internal/movie_info"
 	"nightmare_navigator/internal/config"
 )
 
@@ -16,10 +15,10 @@ func createTempIMDbJSON(t *testing.T, content string) config.Config {
 
 	cfg := config.Config{
 		General: config.General{
-			DataDir:  "data",
+			DataDir: "data",
 		},
 		IMDb: config.IMDb{
-			JSONFilename:  "imdb_movie_infos.json",
+			JSONFilename: "imdb_movie_infos.json",
 		},
 	}
 
@@ -60,7 +59,7 @@ func TestLoadIMDbData(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []movieinfo.MovieInfo{
+	expected := []MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -108,7 +107,7 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []movieinfo.MovieInfo{
+	expected := []MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -125,8 +124,8 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 		},
 	}
 
-	mockGetOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
-		return &movieinfo.MovieInfo{
+	mockGetOMDbInfoByTitle := func(title string) *MovieInfo {
+		return &MovieInfo{
 			Rated:   "R",
 			Country: "UK, USA",
 		}
@@ -162,7 +161,7 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []movieinfo.MovieInfo{
+	expected := []MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -179,8 +178,8 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 		},
 	}
 
-	mockGetOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
-		return &movieinfo.MovieInfo{
+	mockGetOMDbInfoByTitle := func(title string) *MovieInfo {
+		return &MovieInfo{
 			Rated:   "R",
 			Country: "UK, USA",
 		}
@@ -193,7 +192,7 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	}
 }
 
-func equal(a, b []movieinfo.MovieInfo) bool {
+func equal(a, b []MovieInfo) bool {
 	if len(a) != len(b) {
 		return false
 	}

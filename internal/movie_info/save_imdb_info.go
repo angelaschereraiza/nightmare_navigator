@@ -1,4 +1,4 @@
-package save_imdb_info
+package movie_info
 
 import (
 	"bufio"
@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
-	tmdb "nightmare_navigator/internal/movie_info/get_tmdb_info"
 )
 
 type TitleBasics struct {
@@ -208,7 +207,7 @@ func (mgr *SaveIMDbInfoManager) createMovieInfo(fields []string, rating *TitleRa
 }
 
 func (mgr *SaveIMDbInfoManager) addAdditionalInfo(year string, imdbInfo *IMDbMovieInfo) {
-	tmdbManager := tmdb.NewTMDbManager(mgr.cfg)
+	tmdbManager := NewTMDbManager(mgr.cfg)
 	tmdbInfo := tmdbManager.GetTMDbInfoByTitle(imdbInfo.PrimaryTitle, year)
 
 	if tmdbInfo != nil {
