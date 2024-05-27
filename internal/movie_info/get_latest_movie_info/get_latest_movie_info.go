@@ -27,7 +27,7 @@ func NewLatestMoviesManager(cfg config.Config) *LatestMoviesManager {
 }
 
 func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbInfosByYearFunc, buildMovieInfoStrings BuildMovieInfoStringsFunc) *[]string {
-	filepath.Join(mgr.cfg.General.DataDir, mgr.cfg.General.AlreadyReturnedMoviesJSON)
+	alreadyReturnedMoviesFile = filepath.Join(mgr.cfg.General.DataDir, mgr.cfg.General.AlreadyReturnedMoviesJSON)
 
 	if err := os.MkdirAll(mgr.cfg.General.DataDir, 0755); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
@@ -58,7 +58,7 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 	}
 
 	if err := saveReturnedMovies(); err != nil {
-		log.Println("Error saving returned movies:", err)
+		log.Println("Error saving already returned movies:", err)
 	}
 
 	return buildMovieInfoStrings(newMovies)
@@ -122,5 +122,6 @@ func createEmptyJsonFile(filename string) error {
 	if _, err := file.WriteString(emptyJson); err != nil {
 		return err
 	}
+
 	return nil
 }

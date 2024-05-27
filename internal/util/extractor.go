@@ -20,6 +20,7 @@ var genreRegex = map[string]*regexp.Regexp{
 	"Mystery":   regexp.MustCompile(`\b(mystery)\b`),
 }
 
+// ExtractCount extracts the number of movies to be returned
 func ExtractCount(text string) int {
 	numStr := ""
 	for _, char := range text {
@@ -73,7 +74,6 @@ func ExtractDate(text string) time.Time {
 
 	date, err := time.Parse(dateFormat, dateStr)
 	if err != nil {
-		log.Printf("Error parsing date %s: %v", dateStr, err)
 		return now
 	}
 

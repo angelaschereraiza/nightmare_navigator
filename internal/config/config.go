@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	TelegramBot TelegramBot `yaml:"telegram_bot"`
-	General     General     `yaml:"latest_movies"`
+	General     General     `yaml:"general"`
 	IMDb        IMDb        `yaml:"imdb"`
 	TMDb        TMDb        `yaml:"tmdb"`
 	OMDb        OMDb        `yaml:"omdb"`
