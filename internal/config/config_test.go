@@ -35,7 +35,6 @@ imdb:
   min_rating: 5.0
   min_votes: 1000
   ratings_filename: "title.ratings.tsv.gz"
-  download_dir: "downloads"
   imdb_base_url: "https://datasets.imdbws.com/"
 tmdb:
   api_key: "tmdb_api_key"

@@ -53,7 +53,7 @@ func NewSaveIMDbInfoManager(cfg config.Config) *SaveIMDbInfoManager {
 }
 
 func (mgr *SaveIMDbInfoManager) SaveLatestIMDbRatings() {
-	if err := os.MkdirAll(mgr.cfg.IMDb.DownloadDir, 0755); err != nil {
+	if err := os.MkdirAll(mgr.cfg.General.DataDir, 0755); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
 	}
 
@@ -63,19 +63,19 @@ func (mgr *SaveIMDbInfoManager) SaveLatestIMDbRatings() {
 		log.Fatalf("Error downloading files: %v", err)
 	}
 
-	basicsFile, err := os.Open(filepath.Join(mgr.cfg.IMDb.DownloadDir, mgr.cfg.IMDb.BasicsFilename))
+	basicsFile, err := os.Open(filepath.Join(mgr.cfg.General.DataDir, mgr.cfg.IMDb.BasicsFilename))
 	if err != nil {
 		log.Fatalf("Error opening title.basics.tsv.gz: %v", err)
 	}
 	defer basicsFile.Close()
 
-	ratingsFile, err := os.Open(filepath.Join(mgr.cfg.IMDb.DownloadDir, mgr.cfg.IMDb.RatingsFilename))
+	ratingsFile, err := os.Open(filepath.Join(mgr.cfg.General.DataDir, mgr.cfg.IMDb.RatingsFilename))
 	if err != nil {
 		log.Fatalf("Error opening title.ratings.tsv.gz: %v", err)
 	}
 	defer ratingsFile.Close()
 
-	outputFile, err := os.Create(filepath.Join(mgr.cfg.IMDb.DownloadDir, mgr.cfg.IMDb.JSONFilename))
+	outputFile, err := os.Create(filepath.Join(mgr.cfg.General.DataDir, mgr.cfg.IMDb.JSONFilename))
 	if err != nil {
 		log.Fatalf("Error creating output file: %v", err)
 	}
@@ -90,7 +90,7 @@ func (mgr *SaveIMDbInfoManager) SaveLatestIMDbRatings() {
 
 func (mgr *SaveIMDbInfoManager) cleanupFiles(files []string) {
 	for _, file := range files {
-		path := filepath.Join(mgr.cfg.IMDb.DownloadDir, file)
+		path := filepath.Join(mgr.cfg.General.DataDir, file)
 		if _, err := os.Stat(path); err == nil {
 			os.Remove(path)
 		}
@@ -100,7 +100,7 @@ func (mgr *SaveIMDbInfoManager) cleanupFiles(files []string) {
 func (mgr *SaveIMDbInfoManager) downloadAndExtractFiles() error {
 	files := []string{mgr.cfg.IMDb.BasicsFilename, mgr.cfg.IMDb.RatingsFilename}
 	for _, file := range files {
-		if err := downloadFile(mgr.cfg.IMDb.IMDbBaseUrl+file, filepath.Join(mgr.cfg.IMDb.DownloadDir, file)); err != nil {
+		if err := downloadFile(mgr.cfg.IMDb.IMDbBaseUrl+file, filepath.Join(mgr.cfg.General.DataDir, file)); err != nil {
 			return fmt.Errorf("error downloading %s: %v", file, err)
 		}
 	}

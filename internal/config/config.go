@@ -30,7 +30,6 @@ type IMDb struct {
 	MinRating       float64 `yaml:"min_rating"`
 	MinVotes        int     `yaml:"min_votes"`
 	RatingsFilename string  `yaml:"ratings_filename"`
-	DownloadDir     string  `yaml:"download_dir"`
 	IMDbBaseUrl     string  `yaml:"imdb_base_url"`
 }
 

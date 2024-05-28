@@ -34,11 +34,13 @@ func TestSaveLatestIMDbRatings(t *testing.T) {
 	defer mockServer.Close()
 
 	cfg := config.Config{
+		General: config.General{
+			DataDir: "data",
+		},
 		IMDb: config.IMDb{
 			BasicsFilename:  "title.basics.tsv.gz",
 			RatingsFilename: "title.ratings.tsv.gz",
 			JSONFilename:    "imdb_movie_infos_test.json",
-			DownloadDir:     "data",
 			IMDbBaseUrl:     mockServer.URL + "/",
 			MinRating:       5.0,
 			MinVotes:        1000,
@@ -55,7 +57,7 @@ func TestSaveLatestIMDbRatings(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfg.IMDb.DownloadDir = tmpDir
+	cfg.General.DataDir = tmpDir
 
 	manager := NewSaveIMDbInfoManager(cfg)
 	manager.SaveLatestIMDbRatings()
