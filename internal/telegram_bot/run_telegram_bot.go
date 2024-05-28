@@ -28,19 +28,6 @@ func RunTelegramBot() {
 
 	log.Printf("Bot started as %s", bot.Self.UserName)
 
-	// Commented code, which is used for testing
-	// latestMoviesManager := latestinfo.NewLatestMoviesManager(*cfg)
-	// newMovies := latestMoviesManager.GetLatestMovieInfos(imdbinfo.GetIMDbInfosByYear, buildstring.BuildMovieInfoStrings)
-	// if newMovies != nil {
-	// 	for _, newMovie := range *newMovies {
-	// 		msg := tgbotapi.NewMessage(190303235, newMovie)
-	// 		_, err = bot.Send(msg)
-	// 		if err != nil {
-	// 			log.Println(err)
-	// 		}
-	// 	}
-	// }
-
 	timer := time.NewTimer(durationUntilNextExecution())
 
 	go func() {
