@@ -68,6 +68,15 @@ func RunTelegramBot() {
 				}
 			}
 		}
+
+		if strings.Contains(update.Message.Text, "/help") {
+			helpInfo := "Usage:\n- Type 'movies' for the 10 latest horror movies \n- Specify a number for more \n   e.g. '15 movies' \n- Add a date: e.g. 'movies 01.01.94' \n- Specify genres:\n   Sci-Fi, Fantasy, Thriller, Animation or Mystery \n   e.g. 'sci-fi movies' \n- Combine options: \n   e.g. '20 sci-fi thriller movies 10.10.19'"
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, helpInfo)
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	}
 }
 
