@@ -1,2 +1,5 @@
 *.gz
 *.json
+nightmare_navigator
+nightmare_navigator.log
+main
