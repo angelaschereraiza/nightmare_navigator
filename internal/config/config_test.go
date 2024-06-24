@@ -25,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 	validConfig := `
 telegram_bot:
   token: "12345"
-  channel_name: "test_channel"
+  group_id: 12345
 general:
   data_dir: "data"
   already_returned_movies_json: "movies.json"
@@ -55,8 +55,8 @@ omdb:
 		t.Errorf("expected token to be '12345', got %s", config.TelegramBot.Token)
 	}
 
-	if config.TelegramBot.ChannelName != "test_channel" {
-		t.Errorf("expected channel name to be 'test_channel', got %s", config.TelegramBot.ChannelName)
+	if config.TelegramBot.GroupId != 12345 {
+		t.Errorf("expected channel name to be 12345, got %d", config.TelegramBot.GroupId)
 	}
 
 	// Failure case: File not found

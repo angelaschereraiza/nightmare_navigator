@@ -15,8 +15,8 @@ type Config struct {
 }
 
 type TelegramBot struct {
-	Token       string `yaml:"token"`
-	ChannelName string `yaml:"channel_name"`
+	Token   string `yaml:"token"`
+	GroupId int64  `yaml:"group_id"`
 }
 
 type General struct {

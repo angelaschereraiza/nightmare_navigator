@@ -33,7 +33,7 @@ func RunTelegramBot() {
 	go func() {
 		for {
 			<-timer.C
-			executeAt0300AM(bot, cfg.TelegramBot.ChannelName, *imdbManager, *cfg)
+			executeAt0300AM(bot, cfg.TelegramBot.GroupId, *imdbManager, *cfg)
 			timer.Reset(durationUntilNextExecution())
 		}
 	}()
@@ -50,6 +50,7 @@ func RunTelegramBot() {
 		if update.Message == nil {
 			continue
 		}
+
 		if strings.Contains(update.Message.Text, "movie") {
 			movieInfos := movieinfo.GetFilteredMovieInfos(
 				util.ExtractCount(update.Message.Text),
@@ -89,16 +90,16 @@ func durationUntilNextExecution() time.Duration {
 	return nextExecution.Sub(now)
 }
 
-func executeAt0300AM(bot *tgbotapi.BotAPI, channelName string, imdbManager movieinfo.SaveIMDbInfoManager, cfg config.Config) {
+func executeAt0300AM(bot *tgbotapi.BotAPI, groupId int64, imdbManager movieinfo.SaveIMDbInfoManager, cfg config.Config) {
 	imdbManager.SaveLatestIMDbRatings()
 	latestMoviesManager := movieinfo.NewLatestMoviesManager(cfg)
 	newMovies := latestMoviesManager.GetLatestMovieInfos(movieinfo.GetIMDbInfosByYear, movieinfo.BuildMovieInfoStrings)
 	if newMovies != nil {
 		for _, movie := range *newMovies {
-			msg := tgbotapi.NewMessageToChannel(channelName, movie)
+			msg := tgbotapi.NewMessage(groupId, movie)
 			_, err := bot.Send(msg)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 		}
 	}

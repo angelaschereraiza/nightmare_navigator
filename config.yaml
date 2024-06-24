@@ -1,6 +1,6 @@
 telegram_bot:
   token: "6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc"
-  channel_name: "@nightmare_navigator"
+  group_id: -4220342087
 general:
   data_dir: "data"
   already_returned_movies_json: "already_returned_movies.json"
@@ -10,7 +10,7 @@ imdb:
   imdb_base_url: "https://datasets.imdbws.com/"
   json_filename: "imdb_movie_infos.json"
   min_rating: 5.0
-  min_votes: 1000
+  min_votes: 2000
 tmdb:
   api_key: "6882b8441ce200fda300c1e46eeb3e64"
   api_url: "https://api.themoviedb.org/3"
