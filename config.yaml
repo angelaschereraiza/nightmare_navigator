@@ -9,8 +9,8 @@ imdb:
   ratings_filename: "title.ratings.tsv.gz"
   imdb_base_url: "https://datasets.imdbws.com/"
   json_filename: "imdb_movie_infos.json"
-  min_rating: 5.0
-  min_votes: 2000
+  min_rating: 4.8
+  min_votes: 1000
 tmdb:
   api_key: "6882b8441ce200fda300c1e46eeb3e64"
   api_url: "https://api.themoviedb.org/3"
