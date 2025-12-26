@@ -96,9 +96,9 @@ func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, d
 
 	for i := 0; collectedCount < count; i++ {
 		year := strconv.Itoa(date.Year() - i)
-		yearMovies := filterMoviesByYear(imdbMovieInfos, year, date, genres, count-collectedCount)
+		filteredMovies := filterMovies(imdbMovieInfos, year, date, genres, count-collectedCount)
 
-		for _, movie := range yearMovies {
+		for _, movie := range filteredMovies {
 			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
 
 			if omdbMovieDbInfo != nil {
@@ -107,8 +107,8 @@ func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, d
 			}
 			result = append(result, movie)
 
-			collectedCount += len(yearMovies)
-			if len(yearMovies) == 0 {
+			collectedCount += len(filteredMovies)
+			if len(filteredMovies) == 0 {
 				break
 			}
 		}
@@ -128,12 +128,12 @@ func sortMoviesByReleaseDate(movies []MovieInfo) {
 	})
 }
 
-func filterMoviesByYear(movies []MovieInfo, year string, date time.Time, genres []string, count int) []MovieInfo {
+func filterMovies(movies []MovieInfo, year string, date time.Time, genres []string, count int) []MovieInfo {
 	var filteredMovies []MovieInfo
 	sortMoviesByReleaseDate(movies)
 
 	for _, movie := range movies {
-		if movie.Year == year && movieMatchesGenres(movie, genres) && movieMatchDate(movie, date) {
+		if movie.Year == year && movieMatchesGenres(movie, genres) && movieMatchDate(movie, date) && movie.Country != "India" {
 			filteredMovies = append(filteredMovies, movie)
 			if len(filteredMovies) >= count {
 				break

@@ -64,7 +64,7 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 func filterAlreadyReturnedMovies(imdbRatingsMovies []MovieInfo) []MovieInfo {
 	filteredMovies := make([]MovieInfo, 0, len(imdbRatingsMovies))
 	for _, movie := range imdbRatingsMovies {
-		if !alreadyReturnedMovies[movie.Title] {
+		if !alreadyReturnedMovies[movie.Title] && movie.Country != "India" {
 			filteredMovies = append(filteredMovies, movie)
 		}
 	}

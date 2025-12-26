@@ -12,15 +12,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func RunTelegramBot() {
-	cfg, err := config.LoadConfig("config.yaml")
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-
-	imdbManager := movieinfo.NewSaveIMDbInfoManager(*cfg)
-	imdbManager.SaveLatestIMDbRatings()
-
+func RunTelegramBot(cfg *config.Config, imdbManager *movieinfo.SaveIMDbInfoManager) {
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
 	if err != nil {
 		log.Panic(err)
