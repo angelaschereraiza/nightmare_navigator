@@ -1,18 +1,19 @@
-package movie_info
+package bot
 
 import (
 	"reflect"
 	"strings"
 	"testing"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 func TestBuildMovieInfoString(t *testing.T) {
 	tests := []struct {
-		movieInfo MovieInfo
+		movieInfo movieinfo.MovieInfo
 		expected  string
 	}{
 		{
-			movieInfo: MovieInfo{
+			movieInfo: movieinfo.MovieInfo{
 				Title:         "Event Horizon",
 				OriginalTitle: "",
 				IMDb:          "6.7",
@@ -38,7 +39,7 @@ func TestBuildMovieInfoString(t *testing.T) {
 			`,
 		},
 		{
-			movieInfo: MovieInfo{
+			movieInfo: movieinfo.MovieInfo{
 				Title:         "The Grudge",
 				OriginalTitle: "呪怨",
 				IMDb:          "4.3",
@@ -78,7 +79,7 @@ func TestBuildMovieInfoString(t *testing.T) {
 }
 
 func TestBuildMovieInfoStrings(t *testing.T) {
-	movieInfos := []MovieInfo{
+	movieInfos := []movieinfo.MovieInfo{
 		{
 			Title:         "Event Horizon",
 			OriginalTitle: "",

@@ -1,4 +1,4 @@
-package movie_info
+package bot
 
 import (
 	"fmt"
@@ -8,19 +8,20 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
-func mockGetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *MovieInfo) *[]MovieInfo {
-	movie := MovieInfo{
+func mockGetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, date time.Time, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) *[]movieinfo.MovieInfo {
+	movie := movieinfo.MovieInfo{
 		Title:       "Event Horizon",
 		Genres:      "Horror, Sci-Fi",
 		ReleaseDate: "15.08.97",
 		Year:        "1997",
 	}
-	return &[]MovieInfo{movie}
+	return &[]movieinfo.MovieInfo{movie}
 }
 
-func mockBuildMovieInfoStrings(movies []MovieInfo) *[]string {
+func mockBuildMovieInfoStrings(movies []movieinfo.MovieInfo) *[]string {
 	result := []string{"Event Horizon (1997) - Horror, Sci-Fi"}
 	return &result
 }

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
-	"nightmare_navigator/internal/tmdb"
+	"nightmare_navigator/pkg/tmdb"
 )
 
 type TitleBasics struct {

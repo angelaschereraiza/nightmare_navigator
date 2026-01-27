@@ -8,6 +8,7 @@ import (
 
 	"io/fs"
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 func createTempIMDbJSON(t *testing.T, content string) config.Config {
@@ -59,7 +60,7 @@ func TestLoadIMDbData(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []MovieInfo{
+	expected := []movieinfo.MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -107,7 +108,7 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []MovieInfo{
+	expected := []movieinfo.MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -124,8 +125,8 @@ func TestGetIMDbInfosByYear(t *testing.T) {
 		},
 	}
 
-	mockGetOMDbInfoByTitle := func(title string) *MovieInfo {
-		return &MovieInfo{
+	mockGetOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
+		return &movieinfo.MovieInfo{
 			Rated:   "R",
 			Country: "UK, USA",
 		}
@@ -161,7 +162,7 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	cfg := createTempIMDbJSON(t, jsonContent)
 	defer os.RemoveAll(cfg.General.DataDir)
 
-	expected := []MovieInfo{
+	expected := []movieinfo.MovieInfo{
 		{
 			Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			IMDb:          "6.7",
@@ -178,8 +179,8 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 		},
 	}
 
-	mockGetOMDbInfoByTitle := func(title string) *MovieInfo {
-		return &MovieInfo{
+	mockGetOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
+		return &movieinfo.MovieInfo{
 			Rated:   "R",
 			Country: "UK, USA",
 		}
@@ -192,7 +193,7 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	}
 }
 
-func equal(a, b []MovieInfo) bool {
+func equal(a, b []movieinfo.MovieInfo) bool {
 	if len(a) != len(b) {
 		return false
 	}

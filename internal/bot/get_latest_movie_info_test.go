@@ -1,4 +1,4 @@
-package movie_info
+package bot
 
 import (
 	"fmt"
@@ -8,17 +8,18 @@ import (
 	"testing"
 
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 func TestGetLatestMovieInfos(t *testing.T) {
-	mockGetIMDbInfosByYear := func(cfg config.Config, year string, getOMDbInfoByTitle func(string) *MovieInfo) []MovieInfo {
-		return []MovieInfo{
+	mockGetIMDbInfosByYear := func(cfg config.Config, year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
+		return []movieinfo.MovieInfo{
 			{Title: "Movie1", Year: year},
 			{Title: "Movie2", Year: year},
 		}
 	}
 
-	mockBuildMovieInfoStrings := func(movies []MovieInfo) *[]string {
+	mockBuildMovieInfoStrings := func(movies []movieinfo.MovieInfo) *[]string {
 		movieStrings := []string{}
 		for _, movie := range movies {
 			movieStrings = append(movieStrings, fmt.Sprintf("%s (%s)", movie.Title, movie.Year))

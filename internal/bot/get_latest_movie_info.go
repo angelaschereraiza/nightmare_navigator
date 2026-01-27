@@ -1,20 +1,21 @@
-package movie_info
+package bot
 
 import (
 	"encoding/json"
 	"log"
 	"nightmare_navigator/internal/config"
-	"nightmare_navigator/internal/omdb"
+	"nightmare_navigator/pkg/omdb"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 var alreadyReturnedMovies = make(map[string]bool)
 var alreadyReturnedMoviesFile = ""
 
-type GetIMDbInfosByYearFunc func(config.Config, string, func(string) *MovieInfo) []MovieInfo
+type GetIMDbInfosByYearFunc func(config.Config, string, func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo
 
 type LatestMoviesManager struct {
 	cfg config.Config
@@ -35,13 +36,13 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 		log.Println("Error loading already returned movies:", err)
 	}
 
-	getOMDbInfoByTitle := func(title string) *MovieInfo {
+	getOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
 		manager := omdb.NewOMDbManager(mgr.cfg)
 		omdbInfo := manager.GetOMDbInfoByTitle(title)
 		if omdbInfo == nil {
 			return nil
 		}
-		return &MovieInfo{
+		return &movieinfo.MovieInfo{
 			Rated:   omdbInfo.Rated,
 			Country: omdbInfo.Country,
 		}
@@ -62,8 +63,8 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 	return buildMovieInfoStrings(newMovies)
 }
 
-func filterAlreadyReturnedMovies(imdbRatingsMovies []MovieInfo) []MovieInfo {
-	filteredMovies := make([]MovieInfo, 0, len(imdbRatingsMovies))
+func filterAlreadyReturnedMovies(imdbRatingsMovies []movieinfo.MovieInfo) []movieinfo.MovieInfo {
+	filteredMovies := make([]movieinfo.MovieInfo, 0, len(imdbRatingsMovies))
 	for _, movie := range imdbRatingsMovies {
 		if !alreadyReturnedMovies[movie.Title] && movie.Country != "India" {
 			filteredMovies = append(filteredMovies, movie)

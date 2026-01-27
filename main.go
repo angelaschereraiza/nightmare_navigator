@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"nightmare_navigator/internal/config"
-	"nightmare_navigator/internal/imdb"
+	"nightmare_navigator/pkg/imdb"
 	"nightmare_navigator/internal/telegram_bot"
 )
 
