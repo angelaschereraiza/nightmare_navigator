@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"nightmare_navigator/internal/config"
+	"nightmare_navigator/internal/omdb"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -35,7 +36,7 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 	}
 
 	getOMDbInfoByTitle := func(title string) *MovieInfo {
-		manager := NewOMDbManager(mgr.cfg)
+		manager := omdb.NewOMDbManager(mgr.cfg)
 		omdbInfo := manager.GetOMDbInfoByTitle(title)
 		if omdbInfo == nil {
 			return nil

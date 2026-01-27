@@ -26,16 +26,16 @@ func TestBuildMovieInfoString(t *testing.T) {
 				Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			},
 			expected: `Title: Event Horizon
-IMDb Rating: 6.7
-IMDb Votes: 250,000
-IMDb Link: https://www.imdb.com/title/tt0119081
-Country: USA
-Rated: R
-Genres: Horror, Sci-Fi
-Released: 15 Aug 1997
-Runtime: 96 minutes
-Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
-`,
+				IMDb Rating: 6.7
+				IMDb Votes: 250,000
+				IMDb Link: https://www.imdb.com/title/tt0119081
+				Country: USA
+				Rated: R
+				Genres: Horror, Sci-Fi
+				Released: 15 Aug 1997
+				Runtime: 96 minutes
+				Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
+			`,
 		},
 		{
 			movieInfo: MovieInfo{
@@ -52,17 +52,17 @@ Description: A rescue crew investigates a spaceship that disappeared into a blac
 				Description:   "A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.",
 			},
 			expected: `Title: The Grudge
-Original Title: 呪怨
-IMDb Rating: 4.3
-IMDb Votes: 10,000
-IMDb Link: https://www.imdb.com/title/tt3612126
-Country: Japan
-Rated: R
-Genres: Horror, Mystery
-Released: 03 Jan 2020
-Runtime: 94 minutes
-Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
-`,
+				Original Title: 呪怨
+				IMDb Rating: 4.3
+				IMDb Votes: 10,000
+				IMDb Link: https://www.imdb.com/title/tt3612126
+				Country: Japan
+				Rated: R
+				Genres: Horror, Mystery
+				Released: 03 Jan 2020
+				Runtime: 94 minutes
+				Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
+			`,
 		},
 	}
 
@@ -109,28 +109,28 @@ func TestBuildMovieInfoStrings(t *testing.T) {
 
 	expected := []string{
 		`Title: Event Horizon
-IMDb Rating: 6.7
-IMDb Votes: 250,000
-IMDb Link: https://www.imdb.com/title/tt0119081
-Country: USA
-Rated: R
-Genres: Horror, Sci-Fi
-Released: 15 Aug 1997
-Runtime: 96 minutes
-Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
-`,
-		`Title: The Grudge
-Original Title: 呪怨
-IMDb Rating: 4.3
-IMDb Votes: 10,000
-IMDb Link: https://www.imdb.com/title/tt3612126
-Country: Japan
-Rated: R
-Genres: Horror, Mystery
-Released: 03 Jan 2020
-Runtime: 94 minutes
-Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
-`,
+		IMDb Rating: 6.7
+		IMDb Votes: 250,000
+		IMDb Link: https://www.imdb.com/title/tt0119081
+		Country: USA
+		Rated: R
+		Genres: Horror, Sci-Fi
+		Released: 15 Aug 1997
+		Runtime: 96 minutes
+		Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
+		`,
+				`Title: The Grudge
+		Original Title: 呪怨
+		IMDb Rating: 4.3
+		IMDb Votes: 10,000
+		IMDb Link: https://www.imdb.com/title/tt3612126
+		Country: Japan
+		Rated: R
+		Genres: Horror, Mystery
+		Released: 03 Jan 2020
+		Runtime: 94 minutes
+		Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
+	`,
 	}
 
 	result := BuildMovieInfoStrings(movieInfos)

@@ -1,0 +1,19 @@
+telegram_bot:
+  token: "your_token"
+  group_id: "your_group_id"
+general:
+  data_dir: "data"
+  already_returned_movies_json: "already_returned_movies.json"
+imdb:
+  basics_filename: "title.basics.tsv.gz"
+  ratings_filename: "title.ratings.tsv.gz"
+  imdb_base_url: "https://datasets.imdbws.com/"
+  json_filename: "imdb_movie_infos.json"
+  min_rating: 4.8
+  min_votes: 1000
+tmdb:
+  api_key: "your_api_key"
+  api_url: "https://api.themoviedb.org/3"
+omdb:
+  api_key: "your_api_key"
+  api_url: "http://www.omdbapi.com/"

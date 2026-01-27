@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
+	"nightmare_navigator/internal/omdb"
 )
 
 type GetIMDbInfosByDateAndGenreFunc func(config.Config, int, []string, time.Time, func(string) *MovieInfo) *[]MovieInfo
@@ -15,7 +16,7 @@ func GetFilteredMovieInfos(count int, genres []string, date time.Time, getIMDbIn
 	}
 
 	getOMDbInfoByTitle := func(title string) *MovieInfo {
-		manager := NewOMDbManager(cfg)
+		manager := omdb.NewOMDbManager(cfg)
 		omdbInfo := manager.GetOMDbInfoByTitle(title)
 		if omdbInfo == nil {
 			return nil
