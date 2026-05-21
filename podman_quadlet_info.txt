@@ -1,8 +1,0 @@
-Quadlet Config Path:
-vi ~/.config/containers/systemd/nightmare_navigator.container
-
-Check Status:
-systemctl --user status nightmare_navigator.service
-
-Check Logs:
-journalctl --user -u nightmare_navigator.service -f
