@@ -63,7 +63,7 @@ func RunTelegramBot(cfg *config.Config, imdbManager *imdb.IMDbManager) {
 		}
 
 		if strings.Contains(update.Message.Text, "/help") {
-			helpInfo := "Usage:\n- Type 'movies' for the 10 latest horror movies \n- Specify a number for more \ne.g. '15 movies' \n- Add a date e.g. 'movies 14.06.19' \n- Specify genres: Sci-Fi, Fantasy, Thriller, Animation or Mystery e.g. 'sci-fi movies' \n- Combine options e.g. '20 sci-fi thriller movies 14.06.19'"
+			helpInfo := "Usage:\n- Type 'movies' for the 10 latest horror movies \n- Specify a number for more \ne.g. '15 movies' \n- Add a date e.g. 'movies 14.06.19', 'movies 01.01.2012', 'movies Januar 2012' or 'movies 2012' \n- Specify genres: Sci-Fi, Fantasy, Thriller, Animation or Mystery e.g. 'sci-fi movies' \n- Combine options e.g. '20 sci-fi thriller movies 14.06.19'"
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, helpInfo)
 			_, err = bot.Send(msg)
 			if err != nil {

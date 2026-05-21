@@ -18,7 +18,7 @@ func main() {
 	// Initialize IMDb manager and update latest movie ratings from IMDb
 	log.Println("Loading latest movie data from IMDb...")
 	imdbManager := imdb.NewIMDbManager(*cfg)
-	// imdbManager.SaveLatestIMDbRatings()
+	imdbManager.SaveLatestIMDbRatings()
 	log.Println("Movie data successfully loaded and saved")
 
 	// Start the Nightmare Navigator Telegram bot
