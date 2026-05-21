@@ -2,6 +2,7 @@ package bot
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"nightmare_navigator/internal/config"
 	movieinfo "nightmare_navigator/pkg/movie_info"
@@ -73,6 +74,9 @@ func filterAlreadyReturnedMovies(imdbRatingsMovies []movieinfo.MovieInfo) []movi
 		if isIndianCountry(movie.Country) {
 			continue
 		}
+		if !movieIsOlderThanOneMonth(movie) {
+			continue
+		}
 		filteredMovies = append(filteredMovies, movie)
 	}
 	return filteredMovies
@@ -96,6 +100,31 @@ func isIndianCountry(country string) bool {
 		}
 	}
 	return false
+}
+
+func movieIsOlderThanOneMonth(movie movieinfo.MovieInfo) bool {
+	if movie.ReleaseDate == "" {
+		return false
+	}
+
+	releaseDate, err := parseReleaseDate(movie.ReleaseDate)
+	if err != nil {
+		log.Println("Error parsing release date for movie", movie.Title, err)
+		return false
+	}
+
+	now := time.Now()
+	return !releaseDate.AddDate(0, 1, 0).After(now)
+}
+
+func parseReleaseDate(dateStr string) (time.Time, error) {
+	formats := []string{"02.01.06", "02.01.2006"}
+	for _, format := range formats {
+		if date, err := time.Parse(format, dateStr); err == nil {
+			return date, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unsupported date format: %s", dateStr)
 }
 
 func saveReturnedMovies() error {

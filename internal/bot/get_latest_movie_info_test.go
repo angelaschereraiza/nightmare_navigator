@@ -14,10 +14,11 @@ import (
 )
 
 func TestGetLatestMovieInfos(t *testing.T) {
+	alreadyReturnedMovies = make(map[string]bool)
 	mockGetIMDbInfosByYear := func(cfg config.Config, year string, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
 		return []movieinfo.MovieInfo{
-			{Title: "Movie1", Year: year},
-			{Title: "Movie2", Year: year},
+			{Title: "Movie1", Year: year, ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
+			{Title: "Movie2", Year: year, ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
 		}
 	}
 
@@ -60,15 +61,31 @@ func TestGetLatestMovieInfos(t *testing.T) {
 }
 
 func TestIsIndianCountryFilter(t *testing.T) {
+	alreadyReturnedMovies = make(map[string]bool)
 	movies := []movieinfo.MovieInfo{
-		{Title: "MovieIndia1", Country: "India"},
-		{Title: "MovieIndia2", Country: "India, USA"},
-		{Title: "MovieIndia3", Country: "UK, India"},
-		{Title: "MovieOther", Country: "USA"},
+		{Title: "MovieIndia1", Country: "India", ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
+		{Title: "MovieIndia2", Country: "India, USA", ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
+		{Title: "MovieIndia3", Country: "UK, India", ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
+		{Title: "MovieOther", Country: "USA", ReleaseDate: time.Now().AddDate(0, -2, 0).Format("02.01.06")},
 	}
 
 	filtered := filterAlreadyReturnedMovies(movies)
 	if len(filtered) != 1 || filtered[0].Title != "MovieOther" {
 		t.Fatalf("Expected only non-Indian movie to remain, got %v", filtered)
+	}
+}
+
+func TestOlderThanOneMonthFilter(t *testing.T) {
+	alreadyReturnedMovies = make(map[string]bool)
+	youngMovieDate := time.Now().AddDate(0, 0, -10).Format("02.01.06")
+	oldMovieDate := time.Now().AddDate(0, -2, 0).Format("02.01.06")
+	movies := []movieinfo.MovieInfo{
+		{Title: "RecentMovie", Country: "USA", ReleaseDate: youngMovieDate},
+		{Title: "OldMovie", Country: "USA", ReleaseDate: oldMovieDate},
+	}
+
+	filtered := filterAlreadyReturnedMovies(movies)
+	if len(filtered) != 1 || filtered[0].Title != "OldMovie" {
+		t.Fatalf("Expected only old movie to remain, got %v", filtered)
 	}
 }
