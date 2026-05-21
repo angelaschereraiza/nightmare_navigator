@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
+	"nightmare_navigator/internal/bot"
 	"nightmare_navigator/internal/config"
 	"nightmare_navigator/pkg/imdb"
-	"nightmare_navigator/internal/telegram_bot"
 )
 
 func main() {
@@ -18,11 +18,10 @@ func main() {
 	// Initialize IMDb manager and update latest movie ratings from IMDb
 	log.Println("Loading latest movie data from IMDb...")
 	imdbManager := imdb.NewIMDbManager(*cfg)
-	imdbManager.SaveLatestIMDbRatings()
+	// imdbManager.SaveLatestIMDbRatings()
 	log.Println("Movie data successfully loaded and saved")
 
 	// Start the Nightmare Navigator Telegram bot
 	log.Println("Starting Telegram bot...")
-	telegram_bot.RunTelegramBot(cfg, imdbManager)
+	bot.RunTelegramBot(cfg, imdbManager)
 }
-

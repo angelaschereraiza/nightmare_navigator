@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"log"
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 type IMDbJsonData struct {
@@ -72,15 +72,21 @@ func GetIMDbInfosByYear(cfg config.Config, year string, getOMDbInfoByTitle func(
 	var moviesByYear []movieinfo.MovieInfo
 
 	for _, movie := range imdbMovieInfos {
-		if movie.Year == year {
-			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
-			if omdbMovieDbInfo != nil {
-				movie.Rated = omdbMovieDbInfo.Rated
-				movie.Country = omdbMovieDbInfo.Country
-			}
-
-			moviesByYear = append(moviesByYear, movie)
+		if movie.Year != year {
+			continue
 		}
+
+		omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+		if omdbMovieDbInfo != nil {
+			movie.Rated = omdbMovieDbInfo.Rated
+			movie.Country = omdbMovieDbInfo.Country
+		}
+
+		if isIndianCountry(movie.Country) {
+			continue
+		}
+
+		moviesByYear = append(moviesByYear, movie)
 	}
 
 	return moviesByYear
@@ -96,22 +102,16 @@ func GetIMDbInfosByDateAndGenre(cfg config.Config, count int, genres []string, d
 	collectedCount := 0
 
 	for i := 0; collectedCount < count; i++ {
-		year := strconv.Itoa(date.Year() - i)
-		filteredMovies := filterMovies(imdbMovieInfos, year, date, genres, count-collectedCount)
+		yearInt := date.Year() - i
+		if yearInt < 1900 {
+			break
+		}
+		year := strconv.Itoa(yearInt)
+		filteredMovies := filterMovies(imdbMovieInfos, year, date, genres, count-collectedCount, getOMDbInfoByTitle)
 
 		for _, movie := range filteredMovies {
-			omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
-
-			if omdbMovieDbInfo != nil {
-				movie.Rated = omdbMovieDbInfo.Rated
-				movie.Country = omdbMovieDbInfo.Country
-			}
 			result = append(result, movie)
-
-			collectedCount += len(filteredMovies)
-			if len(filteredMovies) == 0 {
-				break
-			}
+			collectedCount += 1
 		}
 	}
 
@@ -129,20 +129,47 @@ func sortMoviesByReleaseDate(movies []movieinfo.MovieInfo) {
 	})
 }
 
-func filterMovies(movies []movieinfo.MovieInfo, year string, date time.Time, genres []string, count int) []movieinfo.MovieInfo {
+func filterMovies(movies []movieinfo.MovieInfo, year string, date time.Time, genres []string, count int, getOMDbInfoByTitle func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo {
 	var filteredMovies []movieinfo.MovieInfo
 	sortMoviesByReleaseDate(movies)
 
 	for _, movie := range movies {
-		if movie.Year == year && movieMatchesGenres(movie, genres) && movieMatchDate(movie, date) && movie.Country != "India" {
-			filteredMovies = append(filteredMovies, movie)
-			if len(filteredMovies) >= count {
-				break
-			}
+		if movie.Year != year || !movieMatchesGenres(movie, genres) || !movieMatchDate(movie, date) {
+			continue
+		}
+
+		omdbMovieDbInfo := getOMDbInfoByTitle(movie.Title)
+		if omdbMovieDbInfo != nil {
+			movie.Rated = omdbMovieDbInfo.Rated
+			movie.Country = omdbMovieDbInfo.Country
+		}
+
+		if isIndianCountry(movie.Country) {
+			continue
+		}
+
+		filteredMovies = append(filteredMovies, movie)
+		if len(filteredMovies) >= count {
+			break
 		}
 	}
 
 	return filteredMovies
+}
+
+func isIndianCountry(country string) bool {
+	country = strings.TrimSpace(strings.ToLower(country))
+	if country == "" {
+		return false
+	}
+
+	parts := strings.Split(country, ",")
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "india" {
+			return true
+		}
+	}
+	return false
 }
 
 func movieMatchesGenres(movie movieinfo.MovieInfo, genres []string) bool {

@@ -193,6 +193,41 @@ func TestGetIMDbInfosByDateAndGenre(t *testing.T) {
 	}
 }
 
+func TestGetIMDbInfosExcludesIndianMovies(t *testing.T) {
+	jsonContent := `
+	[
+		{
+			"data": [
+				{
+					"averageRating": "6.7",
+					"description": "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
+					"genres": "Horror, Sci-Fi",
+					"numVotes": "155651",
+					"originalTitle": "Event Horizon",
+					"primaryTitle": "Event Horizon",
+					"releaseDate": "15.08.97",
+					"runtime": 96,
+					"tconst": "tt0119081"
+				}
+			],
+			"startYear": "1997"
+		}
+	]`
+
+	cfg := createTempIMDbJSON(t, jsonContent)
+	defer os.RemoveAll(cfg.General.DataDir)
+
+	mockGetOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
+		return &movieinfo.MovieInfo{Country: "India"}
+	}
+
+	date, _ := time.Parse("02.01.06", "01.01.21")
+	result := GetIMDbInfosByDateAndGenre(cfg, 1, []string{"Horror", "Sci-Fi"}, date, mockGetOMDbInfoByTitle)
+	if result == nil || len(*result) != 0 {
+		t.Fatalf("Expected no movies, but got %v", result)
+	}
+}
+
 func equal(a, b []movieinfo.MovieInfo) bool {
 	if len(a) != len(b) {
 		return false

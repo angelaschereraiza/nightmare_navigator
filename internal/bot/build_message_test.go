@@ -1,10 +1,10 @@
 package bot
 
 import (
+	movieinfo "nightmare_navigator/pkg/movie_info"
 	"reflect"
 	"strings"
 	"testing"
-	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 func TestBuildMovieInfoString(t *testing.T) {
@@ -26,7 +26,8 @@ func TestBuildMovieInfoString(t *testing.T) {
 				Runtime:       96,
 				Description:   "A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.",
 			},
-			expected: `Title: Event Horizon
+			expected: `
+				Title: Event Horizon
 				IMDb Rating: 6.7
 				IMDb Votes: 250,000
 				IMDb Link: https://www.imdb.com/title/tt0119081
@@ -52,7 +53,8 @@ func TestBuildMovieInfoString(t *testing.T) {
 				Runtime:       94,
 				Description:   "A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.",
 			},
-			expected: `Title: The Grudge
+			expected: `
+				Title: The Grudge
 				Original Title: 呪怨
 				IMDb Rating: 4.3
 				IMDb Votes: 10,000
@@ -70,7 +72,7 @@ func TestBuildMovieInfoString(t *testing.T) {
 	for _, test := range tests {
 		result := buildMovieInfoString(test.movieInfo)
 		result = strings.TrimSpace(result)
-		expected := strings.TrimSpace(test.expected)
+		expected := strings.TrimSpace(dedent(test.expected))
 
 		if result != expected {
 			t.Errorf("BuildMovieInfoString() = %q; want %q", result, expected)
@@ -109,29 +111,31 @@ func TestBuildMovieInfoStrings(t *testing.T) {
 	}
 
 	expected := []string{
-		`Title: Event Horizon
-		IMDb Rating: 6.7
-		IMDb Votes: 250,000
-		IMDb Link: https://www.imdb.com/title/tt0119081
-		Country: USA
-		Rated: R
-		Genres: Horror, Sci-Fi
-		Released: 15 Aug 1997
-		Runtime: 96 minutes
-		Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
+		`
+			Title: Event Horizon
+			IMDb Rating: 6.7
+			IMDb Votes: 250,000
+			IMDb Link: https://www.imdb.com/title/tt0119081
+			Country: USA
+			Rated: R
+			Genres: Horror, Sci-Fi
+			Released: 15 Aug 1997
+			Runtime: 96 minutes
+			Description: A rescue crew investigates a spaceship that disappeared into a black hole and has now returned...with someone or something new on-board.
 		`,
-				`Title: The Grudge
-		Original Title: 呪怨
-		IMDb Rating: 4.3
-		IMDb Votes: 10,000
-		IMDb Link: https://www.imdb.com/title/tt3612126
-		Country: Japan
-		Rated: R
-		Genres: Horror, Mystery
-		Released: 03 Jan 2020
-		Runtime: 94 minutes
-		Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
-	`,
+		`
+			Title: The Grudge
+			Original Title: 呪怨
+			IMDb Rating: 4.3
+			IMDb Votes: 10,000
+			IMDb Link: https://www.imdb.com/title/tt3612126
+			Country: Japan
+			Rated: R
+			Genres: Horror, Mystery
+			Released: 03 Jan 2020
+			Runtime: 94 minutes
+			Description: A house is cursed by a vengeful ghost that dooms those who enter it with a violent death.
+		`,
 	}
 
 	result := BuildMovieInfoStrings(movieInfos)
@@ -139,10 +143,44 @@ func TestBuildMovieInfoStrings(t *testing.T) {
 		(*result)[i] = strings.TrimSpace(r)
 	}
 	for i, e := range expected {
-		expected[i] = strings.TrimSpace(e)
+		expected[i] = strings.TrimSpace(dedent(e))
 	}
 
 	if !reflect.DeepEqual(*result, expected) {
 		t.Errorf("BuildMovieInfoStrings() = %v; want %v", *result, expected)
 	}
+}
+
+func dedent(s string) string {
+	lines := strings.Split(s, "\n")
+
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	minIndent := -1
+	for _, line := range lines {
+		trimmed := strings.TrimLeft(line, " \t")
+		if trimmed == "" {
+			continue
+		}
+		indent := len(line) - len(trimmed)
+		if minIndent == -1 || indent < minIndent {
+			minIndent = indent
+		}
+	}
+
+	if minIndent > 0 {
+		for i, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			lines[i] = line[minIndent:]
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }

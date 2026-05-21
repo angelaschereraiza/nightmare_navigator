@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"nightmare_navigator/internal/config"
 	"strconv"
 	"time"
-	"nightmare_navigator/internal/config"
 )
 
 type Genre struct {
@@ -93,7 +93,7 @@ func fetchMovieSearchResults(url string) (*TMDbInfos, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("Error: received non-200 response code: %d\n", res.StatusCode)
+		log.Printf("Error: received non-200 response code: %d URL: %s", res.StatusCode, url)
 		return nil, fmt.Errorf("received non-200 response code: %d", res.StatusCode)
 	}
 
@@ -115,7 +115,7 @@ func fetchMovieDetails(url string) (*MovieDetailsResponse, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("Error: received non-200 response code: %d\n", res.StatusCode)
+		log.Printf("Error: received non-200 response code: %d URL: %s", res.StatusCode, url)
 		return nil, fmt.Errorf("received non-200 response code: %d", res.StatusCode)
 	}
 

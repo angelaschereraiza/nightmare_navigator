@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"log"
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 	"nightmare_navigator/pkg/omdb"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
-	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
 var alreadyReturnedMovies = make(map[string]bool)
@@ -66,11 +67,35 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 func filterAlreadyReturnedMovies(imdbRatingsMovies []movieinfo.MovieInfo) []movieinfo.MovieInfo {
 	filteredMovies := make([]movieinfo.MovieInfo, 0, len(imdbRatingsMovies))
 	for _, movie := range imdbRatingsMovies {
-		if !alreadyReturnedMovies[movie.Title] && movie.Country != "India" {
-			filteredMovies = append(filteredMovies, movie)
+		if alreadyReturnedMovies[movie.Title] {
+			continue
 		}
+		if isIndianCountry(movie.Country) {
+			continue
+		}
+		filteredMovies = append(filteredMovies, movie)
 	}
 	return filteredMovies
+}
+
+func isIndianCountry(country string) bool {
+	country = strings.TrimSpace(strings.ToLower(country))
+	if country == "" {
+		return false
+	}
+
+	separators := []string{",", ";", "/", "|"}
+	for _, sep := range separators {
+		country = strings.ReplaceAll(country, sep, ",")
+	}
+
+	parts := strings.Split(country, ",")
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "india" {
+			return true
+		}
+	}
+	return false
 }
 
 func saveReturnedMovies() error {
