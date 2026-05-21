@@ -1,4 +1,4 @@
-package movie_info
+package tmdb
 
 import (
 	"fmt"

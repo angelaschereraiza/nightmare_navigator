@@ -3,26 +3,25 @@ package main
 import (
 	"log"
 
+	"nightmare_navigator/internal/bot"
 	"nightmare_navigator/internal/config"
-	movieinfo "nightmare_navigator/internal/movie_info"
-	"nightmare_navigator/internal/telegram_bot"
+	"nightmare_navigator/pkg/imdb"
 )
 
 func main() {
-	// Load application configuration from file
+	// Load application configuration from config file
 	cfg, err := config.LoadConfig("config.yaml")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// Initialize IMDb manager and update latest movie ratings
+	// Initialize IMDb manager and update latest movie ratings from IMDb
 	log.Println("Loading latest movie data from IMDb...")
-	imdbManager := movieinfo.NewSaveIMDbInfoManager(*cfg)
-	imdbManager.SaveLatestIMDbRatings()
+	imdbManager := imdb.NewIMDbManager(*cfg)
+	// imdbManager.SaveLatestIMDbRatings()
 	log.Println("Movie data successfully loaded and saved")
 
 	// Start the Nightmare Navigator Telegram bot
 	log.Println("Starting Telegram bot...")
-	telegram_bot.RunTelegramBot(cfg, imdbManager)
+	bot.RunTelegramBot(cfg, imdbManager)
 }
-

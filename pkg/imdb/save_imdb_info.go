@@ -1,4 +1,4 @@
-package movie_info
+package imdb
 
 import (
 	"bufio"
@@ -45,15 +45,15 @@ type IMDbMovieInfo struct {
 	Tconst        string `json:"tconst"`
 }
 
-type SaveIMDbInfoManager struct {
+type IMDbManager struct {
 	cfg config.Config
 }
 
-func NewSaveIMDbInfoManager(cfg config.Config) *SaveIMDbInfoManager {
-	return &SaveIMDbInfoManager{cfg: cfg}
+func NewIMDbManager(cfg config.Config) *IMDbManager {
+	return &IMDbManager{cfg: cfg}
 }
 
-func (mgr *SaveIMDbInfoManager) SaveLatestIMDbRatings() {
+func (mgr *IMDbManager) SaveLatestIMDbRatings() {
 	if err := os.MkdirAll(mgr.cfg.General.DataDir, 0755); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
 	}
@@ -89,7 +89,7 @@ func (mgr *SaveIMDbInfoManager) SaveLatestIMDbRatings() {
 	log.Println("Updated IMDb movie list")
 }
 
-func (mgr *SaveIMDbInfoManager) cleanupFiles(files []string) {
+func (mgr *IMDbManager) cleanupFiles(files []string) {
 	for _, file := range files {
 		path := filepath.Join(mgr.cfg.General.DataDir, file)
 		if _, err := os.Stat(path); err == nil {
@@ -98,23 +98,17 @@ func (mgr *SaveIMDbInfoManager) cleanupFiles(files []string) {
 	}
 }
 
-func (mgr *SaveIMDbInfoManager) downloadAndExtractFiles() error {
+func (mgr *IMDbManager) downloadAndExtractFiles() error {
 	files := []string{mgr.cfg.IMDb.BasicsFilename, mgr.cfg.IMDb.RatingsFilename}
-
-	baseURL := strings.TrimRight(mgr.cfg.IMDb.IMDbBaseUrl, "/")
-
 	for _, file := range files {
-		url := baseURL + "/" + file
-		path := filepath.Join(mgr.cfg.General.DataDir, file)
-
-		if err := downloadFile(url, path); err != nil {
-			return fmt.Errorf("error downloading %s: %w", file, err)
+		if err := downloadFile(mgr.cfg.IMDb.IMDbBaseUrl+file, filepath.Join(mgr.cfg.General.DataDir, file)); err != nil {
+			return fmt.Errorf("error downloading %s: %v", file, err)
 		}
 	}
 	return nil
 }
 
-func (mgr *SaveIMDbInfoManager) loadIMDbMovies(basicsFile, ratingsFile *os.File) map[string][]IMDbMovieInfo {
+func (mgr *IMDbManager) loadIMDbMovies(basicsFile, ratingsFile *os.File) map[string][]IMDbMovieInfo {
 	ratings := loadRatings(ratingsFile)
 	return mgr.loadBasicsAndFilter(basicsFile, ratings)
 }
@@ -148,7 +142,7 @@ func loadRatings(file *os.File) map[string]*TitleRatings {
 	return ratings
 }
 
-func (mgr *SaveIMDbInfoManager) loadBasicsAndFilter(file *os.File, ratings map[string]*TitleRatings) map[string][]IMDbMovieInfo {
+func (mgr *IMDbManager) loadBasicsAndFilter(file *os.File, ratings map[string]*TitleRatings) map[string][]IMDbMovieInfo {
 	moviesByYear := make(map[string][]IMDbMovieInfo)
 	reader, err := gzip.NewReader(file)
 	if err != nil {
@@ -171,24 +165,24 @@ func (mgr *SaveIMDbInfoManager) loadBasicsAndFilter(file *os.File, ratings map[s
 	return moviesByYear
 }
 
-func (mgr *SaveIMDbInfoManager) filterMovieAndGetAdditionalInfo(fields []string, ratings map[string]*TitleRatings, moviesByYear map[string][]IMDbMovieInfo) {
+func (mgr *IMDbManager) filterMovieAndGetAdditionalInfo(fields []string, ratings map[string]*TitleRatings, moviesByYear map[string][]IMDbMovieInfo) {
 	if rating, ok := ratings[fields[0]]; ok && rating.AverageRating >= mgr.cfg.IMDb.MinRating && rating.NumVotes >= mgr.cfg.IMDb.MinVotes {
 		genres := strings.Split(fields[8], ",")
 		if containsGenre(genres, "Horror") && !containsGenre(genres, "Romance") && !containsGenre(genres, "Family") {
 			movieInfo := mgr.createMovieInfo(fields, rating)
 			startYear := fields[5]
+			mgr.addAdditionalInfo(startYear, movieInfo)
 
 			if movieInfo == nil || movieInfo.ReleaseDate == "" {
 				return
 			}
 
 			moviesByYear[startYear] = append(moviesByYear[startYear], *movieInfo)
-
 		}
 	}
 }
 
-func (mgr *SaveIMDbInfoManager) createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
+func (mgr *IMDbManager) createMovieInfo(fields []string, rating *TitleRatings) *IMDbMovieInfo {
 	genres := strings.Split(fields[8], ",")
 	var genresFormatted strings.Builder
 
@@ -212,7 +206,7 @@ func (mgr *SaveIMDbInfoManager) createMovieInfo(fields []string, rating *TitleRa
 	}
 }
 
-func (mgr *SaveIMDbInfoManager) addAdditionalInfo(year string, imdbInfo *IMDbMovieInfo) {
+func (mgr *IMDbManager) addAdditionalInfo(year string, imdbInfo *IMDbMovieInfo) {
 	tmdbManager := tmdb.NewTMDbManager(mgr.cfg)
 	tmdbInfo := tmdbManager.GetTMDbInfoByTitle(imdbInfo.PrimaryTitle, year)
 
@@ -232,7 +226,7 @@ func containsGenre(genres []string, genre string) bool {
 	return false
 }
 
-func (mgr *SaveIMDbInfoManager) writeJSON(outputFile *os.File, moviesByYear map[string][]IMDbMovieInfo) {
+func (mgr *IMDbManager) writeJSON(outputFile *os.File, moviesByYear map[string][]IMDbMovieInfo) {
 	encoder := json.NewEncoder(outputFile)
 	encoder.SetIndent("", "\t")
 
@@ -277,23 +271,16 @@ func sortIMDbMoviesByReleaseDate(movies []IMDbMovieInfo) {
 func downloadFile(url, filename string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received non-200 response code: %d for %s", resp.StatusCode, url)
-	}
-
 	out, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("create file: %w", err)
+		return err
 	}
 	defer out.Close()
 
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return fmt.Errorf("write file: %w", err)
-	}
-
-	return nil
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

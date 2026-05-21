@@ -1,4 +1,4 @@
-package telegram_bot
+package bot
 
 import (
 	"log"
@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"nightmare_navigator/internal/config"
-	movieinfo "nightmare_navigator/internal/movie_info"
-	"nightmare_navigator/internal/util"
+	"nightmare_navigator/pkg/imdb"
+	"nightmare_navigator/pkg/util"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func RunTelegramBot(cfg *config.Config, imdbManager *movieinfo.SaveIMDbInfoManager) {
+func RunTelegramBot(cfg *config.Config, imdbManager *imdb.IMDbManager) {
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBot.Token)
 	if err != nil {
 		log.Panic(err)
@@ -44,12 +44,12 @@ func RunTelegramBot(cfg *config.Config, imdbManager *movieinfo.SaveIMDbInfoManag
 		}
 
 		if strings.Contains(update.Message.Text, "movie") {
-			movieInfos := movieinfo.GetFilteredMovieInfos(
+			movieInfos := GetFilteredMovieInfos(
 				util.ExtractCount(update.Message.Text),
 				util.ExtractGenres(update.Message.Text),
 				util.ExtractDate(update.Message.Text),
-				movieinfo.GetIMDbInfosByDateAndGenre,
-				movieinfo.BuildMovieInfoStrings,
+				imdb.GetIMDbInfosByDateAndGenre,
+				BuildMovieInfoStrings,
 				*cfg,
 			)
 
@@ -82,10 +82,10 @@ func durationUntilNextExecution() time.Duration {
 	return nextExecution.Sub(now)
 }
 
-func executeAt0300AM(bot *tgbotapi.BotAPI, groupId int64, imdbManager movieinfo.SaveIMDbInfoManager, cfg config.Config) {
+func executeAt0300AM(bot *tgbotapi.BotAPI, groupId int64, imdbManager imdb.IMDbManager, cfg config.Config) {
 	imdbManager.SaveLatestIMDbRatings()
-	latestMoviesManager := movieinfo.NewLatestMoviesManager(cfg)
-	newMovies := latestMoviesManager.GetLatestMovieInfos(movieinfo.GetIMDbInfosByYear, movieinfo.BuildMovieInfoStrings)
+	latestMoviesManager := NewLatestMoviesManager(cfg)
+	newMovies := latestMoviesManager.GetLatestMovieInfos(imdb.GetIMDbInfosByYear, BuildMovieInfoStrings)
 	if newMovies != nil {
 		for _, movie := range *newMovies {
 			msg := tgbotapi.NewMessage(groupId, movie)

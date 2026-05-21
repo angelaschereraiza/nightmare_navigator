@@ -1,19 +1,22 @@
-package movie_info
+package bot
 
 import (
 	"encoding/json"
 	"log"
 	"nightmare_navigator/internal/config"
+	movieinfo "nightmare_navigator/pkg/movie_info"
+	"nightmare_navigator/pkg/omdb"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
 var alreadyReturnedMovies = make(map[string]bool)
 var alreadyReturnedMoviesFile = ""
 
-type GetIMDbInfosByYearFunc func(config.Config, string, func(string) *MovieInfo) []MovieInfo
+type GetIMDbInfosByYearFunc func(config.Config, string, func(string) *movieinfo.MovieInfo) []movieinfo.MovieInfo
 
 type LatestMoviesManager struct {
 	cfg config.Config
@@ -34,13 +37,13 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 		log.Println("Error loading already returned movies:", err)
 	}
 
-	getOMDbInfoByTitle := func(title string) *MovieInfo {
-		manager := NewOMDbManager(mgr.cfg)
+	getOMDbInfoByTitle := func(title string) *movieinfo.MovieInfo {
+		manager := omdb.NewOMDbManager(mgr.cfg)
 		omdbInfo := manager.GetOMDbInfoByTitle(title)
 		if omdbInfo == nil {
 			return nil
 		}
-		return &MovieInfo{
+		return &movieinfo.MovieInfo{
 			Rated:   omdbInfo.Rated,
 			Country: omdbInfo.Country,
 		}
@@ -61,14 +64,38 @@ func (mgr *LatestMoviesManager) GetLatestMovieInfos(getIMDbInfosByYear GetIMDbIn
 	return buildMovieInfoStrings(newMovies)
 }
 
-func filterAlreadyReturnedMovies(imdbRatingsMovies []MovieInfo) []MovieInfo {
-	filteredMovies := make([]MovieInfo, 0, len(imdbRatingsMovies))
+func filterAlreadyReturnedMovies(imdbRatingsMovies []movieinfo.MovieInfo) []movieinfo.MovieInfo {
+	filteredMovies := make([]movieinfo.MovieInfo, 0, len(imdbRatingsMovies))
 	for _, movie := range imdbRatingsMovies {
-		if !alreadyReturnedMovies[movie.Title] && movie.Country != "India" {
-			filteredMovies = append(filteredMovies, movie)
+		if alreadyReturnedMovies[movie.Title] {
+			continue
 		}
+		if isIndianCountry(movie.Country) {
+			continue
+		}
+		filteredMovies = append(filteredMovies, movie)
 	}
 	return filteredMovies
+}
+
+func isIndianCountry(country string) bool {
+	country = strings.TrimSpace(strings.ToLower(country))
+	if country == "" {
+		return false
+	}
+
+	separators := []string{",", ";", "/", "|"}
+	for _, sep := range separators {
+		country = strings.ReplaceAll(country, sep, ",")
+	}
+
+	parts := strings.Split(country, ",")
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "india" {
+			return true
+		}
+	}
+	return false
 }
 
 func saveReturnedMovies() error {

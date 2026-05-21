@@ -1,12 +1,13 @@
-package movie_info
+package bot
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
+	movieinfo "nightmare_navigator/pkg/movie_info"
 )
 
-func BuildMovieInfoStrings(movieInfos []MovieInfo) *[]string {
+func BuildMovieInfoStrings(movieInfos []movieinfo.MovieInfo) *[]string {
 	results := make([]string, len(movieInfos))
 
 	for i, movieInfo := range movieInfos {
@@ -16,7 +17,7 @@ func BuildMovieInfoStrings(movieInfos []MovieInfo) *[]string {
 	return &results
 }
 
-func buildMovieInfoString(movieInfo MovieInfo) string {
+func buildMovieInfoString(movieInfo movieinfo.MovieInfo) string {
 	var result strings.Builder
 
 	result.WriteString(fmt.Sprintf("Title: %s\n", movieInfo.Title))

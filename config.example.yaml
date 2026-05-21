@@ -1,6 +1,6 @@
 telegram_bot:
-  token: "6860257928:AAG8dygOS9j4rFl6x5oyrWxx8LIHbWsZATc"
-  group_id: -4220342087
+  token: "your_token"
+  group_id: "your_group_id"
 general:
   data_dir: "data"
   already_returned_movies_json: "already_returned_movies.json"
@@ -12,8 +12,8 @@ imdb:
   min_rating: 4.8
   min_votes: 1000
 tmdb:
-  api_key: "6882b8441ce200fda300c1e46eeb3e64"
+  api_key: "your_api_key"
   api_url: "https://api.themoviedb.org/3"
 omdb:
-  api_key: "3f026020"
+  api_key: "your_api_key"
   api_url: "http://www.omdbapi.com/"

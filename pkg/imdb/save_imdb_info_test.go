@@ -1,4 +1,4 @@
-package movie_info
+package imdb
 
 import (
 	"bytes"
@@ -59,7 +59,7 @@ func TestSaveLatestIMDbRatings(t *testing.T) {
 
 	cfg.General.DataDir = tmpDir
 
-	manager := NewSaveIMDbInfoManager(cfg)
+	manager := NewIMDbManager(cfg)
 	manager.SaveLatestIMDbRatings()
 
 	jsonFile := filepath.Join(tmpDir, cfg.IMDb.JSONFilename)
