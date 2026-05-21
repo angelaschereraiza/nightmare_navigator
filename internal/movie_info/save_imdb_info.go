@@ -99,9 +99,15 @@ func (mgr *SaveIMDbInfoManager) cleanupFiles(files []string) {
 
 func (mgr *SaveIMDbInfoManager) downloadAndExtractFiles() error {
 	files := []string{mgr.cfg.IMDb.BasicsFilename, mgr.cfg.IMDb.RatingsFilename}
+
+	baseURL := strings.TrimRight(mgr.cfg.IMDb.IMDbBaseUrl, "/")
+
 	for _, file := range files {
-		if err := downloadFile(mgr.cfg.IMDb.IMDbBaseUrl+file, filepath.Join(mgr.cfg.General.DataDir, file)); err != nil {
-			return fmt.Errorf("error downloading %s: %v", file, err)
+		url := baseURL + "/" + file
+		path := filepath.Join(mgr.cfg.General.DataDir, file)
+
+		if err := downloadFile(url, path); err != nil {
+			return fmt.Errorf("error downloading %s: %w", file, err)
 		}
 	}
 	return nil
@@ -170,7 +176,6 @@ func (mgr *SaveIMDbInfoManager) filterMovieAndGetAdditionalInfo(fields []string,
 		if containsGenre(genres, "Horror") && !containsGenre(genres, "Romance") && !containsGenre(genres, "Family") {
 			movieInfo := mgr.createMovieInfo(fields, rating)
 			startYear := fields[5]
-			mgr.addAdditionalInfo(startYear, movieInfo)
 
 			if movieInfo == nil || movieInfo.ReleaseDate == "" {
 				return
@@ -271,16 +276,23 @@ func sortIMDbMoviesByReleaseDate(movies []IMDbMovieInfo) {
 func downloadFile(url, filename string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received non-200 response code: %d for %s", resp.StatusCode, url)
+	}
+
 	out, err := os.Create(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("create file: %w", err)
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+
+	return nil
 }
