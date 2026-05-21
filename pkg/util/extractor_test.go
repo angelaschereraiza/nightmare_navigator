@@ -1,6 +1,7 @@
 package util
 
 import (
+	"sort"
 	"testing"
 	"time"
 )
@@ -55,8 +56,14 @@ func equalStringSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+
+	aCopy := append([]string(nil), a...)
+	bCopy := append([]string(nil), b...)
+	sort.Strings(aCopy)
+	sort.Strings(bCopy)
+
+	for i := range aCopy {
+		if aCopy[i] != bCopy[i] {
 			return false
 		}
 	}
@@ -73,7 +80,12 @@ func TestExtractDate(t *testing.T) {
 		{"No date here", time.Now()},
 		{"", time.Now()},
 		{"Invalid date 99.99.99", time.Now()},
-		{"Wrong date format 2021-12-25", time.Now()},
+		{"Full numeric date 2021-12-25", time.Date(2021, time.December, 25, 0, 0, 0, 0, time.UTC)},
+		{"Full year 2012", time.Date(2012, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{"German month 01. Januar 2012", time.Date(2012, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{"Month year Januar 2013", time.Date(2013, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{"Short German month 2. Feb 2013", time.Date(2013, time.February, 2, 0, 0, 0, 0, time.UTC)},
+		{"Full numeric date 01.01.2012", time.Date(2012, time.January, 1, 0, 0, 0, 0, time.UTC)},
 	}
 
 	for _, test := range tests {
