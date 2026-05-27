@@ -1,10 +1,8 @@
 module nightmare_navigator
 
-go 1.21.8
-
-require github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
+go 1.26.3
 
 require (
-	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	github.com/OvyFlash/telegram-bot-api v0.0.0-20260520191229-4464f18f9850
+	gopkg.in/yaml.v2 v2.4.0
 )

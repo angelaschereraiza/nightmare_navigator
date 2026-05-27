@@ -9,7 +9,7 @@ import (
 	"nightmare_navigator/pkg/imdb"
 	"nightmare_navigator/pkg/util"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 )
 
 func RunTelegramBot(cfg *config.Config, imdbManager *imdb.IMDbManager) {
@@ -33,10 +33,7 @@ func RunTelegramBot(cfg *config.Config, imdbManager *imdb.IMDbManager) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := bot.GetUpdatesChan(u)
-	if err != nil {
-		log.Println(err)
-	}
+	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
 		if update.Message == nil {
